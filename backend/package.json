@@ -1,0 +1,23 @@
+{
+  "name": "enterprise-claude-skills-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "migrate": "node scripts/migrate.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "bullmq": "^1.40.0",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "ioredis": "^5.4.1",
+    "pg": "^8.7.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.12",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.4"
+  }
+}
