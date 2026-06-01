@@ -37,3 +37,10 @@ MANDATORY AFTER COMPLETION:
 - Use handbook-aligned status tiers (`Implemented`, `Partial`, `Missing`) for roadmap communication.
 - Treat current codebase as a control-plane foundation, not a finished enterprise platform.
 - Prioritize next milestones in order: auth/RBAC, approvals workflow, workers/runtime, integrations, then knowledge/search depth.
+
+## [2026-06-01T17:15:00Z] MON-01 Decisions
+- Integrate third-party credentials catalog (Asana, Monday.com, GitHub, Slack) inside the database connections layer using a dedicated migration table `integration_connections`.
+- Model human-in-the-loop compliance reviews using an `approval_gates` table, exposing `/api/approvals` GET and POST decide API, completely resolving the approvals dashboard queue page.
+- Clean up macOS metadata filesystem junk files (`._*`) during executions to avoid cluttering git commits and Jest test runs.
+- Commit lockfiles updates following dependency installation to keep baseline locked versions consistent.
+
