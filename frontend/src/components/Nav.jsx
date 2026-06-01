@@ -16,6 +16,7 @@ export default function Nav() {
       <Link to="/agents">Agents</Link>
       <Link to="/runs">Runs</Link>
       <Link to="/approvals">Approvals</Link>
+      <Link to="/integrations">Integrations</Link>
       <Link to="/audit">Audit Logs</Link>
       <Link to="/reports">Reports</Link>
     </nav>

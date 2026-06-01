@@ -18,6 +18,7 @@ import Agents from './pages/Agents';
 import Runs from './pages/Runs';
 import Approvals from './pages/Approvals';
 import Audit from './pages/Audit';
+import Integrations from './pages/Integrations';
 
 function App() {
   return (
@@ -40,6 +41,7 @@ function App() {
             <Route path="/agents" component={Agents} />
             <Route path="/runs" component={Runs} />
             <Route path="/approvals" component={Approvals} />
+            <Route path="/integrations" component={Integrations} />
             <Route path="/audit" component={Audit} />
             <Route path="/reports" component={require('./pages/Reports').default} />
           </AdminGuard>
