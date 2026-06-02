@@ -12,12 +12,18 @@ const reports = require('./routes/reports');
 const runs = require('./routes/runs');
 const approvals = require('./routes/approvals');
 const integrations = require('./routes/integrations');
+const { authenticateRequest, requireRole } = require('./middleware/auth');
 
 function buildApp() {
   const app = express();
   app.use(cors());
   app.use(express.json());
   app.use('/health', health);
+  app.use('/api', authenticateRequest);
+  app.use('/api', (req, res, next) => {
+    if (req.method === 'GET') return next();
+    return requireRole(['admin', 'operator'])(req, res, next);
+  });
   app.use('/api', registry);
   app.use('/api', suites);
   app.use('/api', entitlements);

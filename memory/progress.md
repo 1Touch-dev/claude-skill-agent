@@ -54,8 +54,15 @@ MANDATORY AFTER COMPLETION:
 - Parameterized backend database and cache environment variables in docker-compose.yml, integrating secure secrets injection through standard ${GITHUB_TOKEN} reference to pass push validation.
 - Deployed entire container stack natively on remote AWS EC2 instance (Claude-Skills) using Docker Compose.
 - Successfully applied and verified database migrations and seeds inside the remote postgres container.
-- Updated the remote integration records to map the provided GitHub token ghp_xxxxxxxxxxxx to the secure credential vault.
+- Updated remote integration records to map provided GitHub credentials into the credential vault.
 - Validated all 21/21 API routes over the public EC2 IP network successfully, confirming 100% operational integration over the wire.
 - Composed and pushed all finalized deployment configurations and Dockerfiles to the main branch of the GitHub repository.
+
+## [2026-06-02T08:55:00Z] TUE-03 In Progress
+- Added backend authentication and RBAC middleware (`authenticateRequest`, `requireRole`) and mounted protection on all `/api` routes.
+- Added frontend bearer-token propagation in API client for future authenticated API access.
+- Added auth-focused backend tests (`backend/tests/auth.test.js`) and validated all backend Jest suites passing in a Node container.
+- Fixed Docker frontend port mapping mismatch (`3001:3001`) so the website is reachable correctly in containerized runtime.
+- Ran Docker stack smoke tests and browser-based E2E navigation/login verification across main UI sections.
 
 
