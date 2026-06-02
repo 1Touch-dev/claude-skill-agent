@@ -10,16 +10,20 @@ export default function Audit(){
     apiGet(`/runs/${runId}/audit`).then(setLogs).catch(e=>setErr(String(e)));
   };
   return (
-    <div style={{ padding:20 }}>
-      <h2>Audit Logs</h2>
-      <div>
-        <input placeholder="Run ID" value={runId} onChange={e=>setRunId(e.target.value)} />
-        <button onClick={load}>Load</button>
+    <main className="page">
+      <div className="page__header">
+        <h2>Audit Logs</h2>
       </div>
-      {err && <div style={{ color:'red' }}>{err}</div>}
-      <ul>
-        {logs.map((l,i)=> <li key={i}>{l.event_at}: {l.event_type} — {JSON.stringify(l.data)}</li>)}
-      </ul>
-    </div>
+      <section className="panel">
+        <div className="row-inline">
+          <input className="field-input" placeholder="Run ID" value={runId} onChange={e=>setRunId(e.target.value)} />
+          <button className="btn-primary" onClick={load}>Load</button>
+        </div>
+        {err && <div className="status status--error">{err}</div>}
+        <ul className="audit-list">
+          {logs.map((l,i)=> <li key={i}>{l.event_at}: {l.event_type} — {JSON.stringify(l.data)}</li>)}
+        </ul>
+      </section>
+    </main>
   );
 }

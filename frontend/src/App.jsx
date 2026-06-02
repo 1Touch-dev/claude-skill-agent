@@ -3,7 +3,7 @@ import './App.css';
 import Header from './components/Header';
 import Nav from './components/Nav';
 import AdminGuard from './components/AdminGuard';
-import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Switch, Route, useLocation } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
 import Login from './pages/Login';
 import Skills from './pages/Skills';
@@ -19,13 +19,21 @@ import Runs from './pages/Runs';
 import Approvals from './pages/Approvals';
 import Audit from './pages/Audit';
 import Integrations from './pages/Integrations';
+import Footer from './components/Footer';
 
-function App() {
+function AppLayout() {
+  const location = useLocation();
+  const isLoginPage = location.pathname === '/login';
+
   return (
-    <Router>
-      <div className="App">
-        <Header />
-        <Nav />
+    <div className={`app-shell ${isLoginPage ? 'app-shell--login' : ''}`}>
+      {!isLoginPage && (
+        <aside className="app-sidebar">
+          <Header />
+          <Nav />
+        </aside>
+      )}
+      <div className="app-main">
         <Switch>
           <Route path="/login" component={Login} />
           <AdminGuard>
@@ -46,7 +54,16 @@ function App() {
             <Route path="/reports" component={require('./pages/Reports').default} />
           </AdminGuard>
         </Switch>
+        {!isLoginPage && <Footer />}
       </div>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AppLayout />
     </Router>
   );
 }

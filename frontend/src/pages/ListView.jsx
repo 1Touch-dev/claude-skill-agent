@@ -26,43 +26,45 @@ export default function ListView({ title, path, columns, mapRow = (row) => row, 
       : rows;
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>{title}</h2>
+    <main className="page">
+      <div className="page__header">
+        <h2>{title}</h2>
+      </div>
       {queryParam && (
         <input
+          className="field-input"
           placeholder={`Filter by ${queryParam}`}
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          style={{ marginBottom: 12, padding: '0.35rem 0.5rem' }}
         />
       )}
-      {err && <div style={{ color: 'crimson' }}>{err}</div>}
+      {err && <div className="status status--error">{err}</div>}
       {loading ? (
-        <p>Loading…</p>
+        <p className="status status--muted">Loading…</p>
       ) : (
-        <table border="1" cellPadding="6" style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              {columns.map((col) => (
-                <th key={col} style={{ textAlign: 'left' }}>
-                  {col}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((row, index) => (
-              <tr key={row.id ?? index}>
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
                 {columns.map((col) => (
-                  <td key={col}>{formatCell(row[col])}</td>
+                  <th key={col}>{col}</th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filtered.map((row, index) => (
+                <tr key={row.id ?? index}>
+                  {columns.map((col) => (
+                    <td key={col}>{formatCell(row[col])}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
-      {!loading && !err && filtered.length === 0 && <p>No rows.</p>}
-    </div>
+      {!loading && !err && filtered.length === 0 && <p className="status status--muted">No rows.</p>}
+    </main>
   );
 }
 

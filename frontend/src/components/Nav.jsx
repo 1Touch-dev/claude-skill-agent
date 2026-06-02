@@ -1,24 +1,38 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 
 export default function Nav() {
+  const links = [
+    ['/', 'Dashboard', true],
+    ['/skills', 'Skills'],
+    ['/packages', 'Packages'],
+    ['/suites', 'Suites'],
+    ['/overlays', 'Overlays'],
+    ['/customers', 'Customers'],
+    ['/workspaces', 'Workspaces'],
+    ['/entitlements', 'Entitlements'],
+    ['/credit-pools', 'Credit Pools'],
+    ['/agents', 'Agents'],
+    ['/runs', 'Runs'],
+    ['/approvals', 'Approvals'],
+    ['/integrations', 'Integrations'],
+    ['/audit', 'Audit Logs'],
+    ['/reports', 'Reports'],
+  ];
+
   return (
-    <nav className="nav">
-      <Link to="/">Dashboard</Link>
-      <Link to="/skills">Skills</Link>
-      <Link to="/packages">Packages</Link>
-      <Link to="/suites">Suites</Link>
-      <Link to="/overlays">Overlays</Link>
-      <Link to="/customers">Customers</Link>
-      <Link to="/workspaces">Workspaces</Link>
-      <Link to="/entitlements">Entitlements</Link>
-      <Link to="/credit-pools">Credit Pools</Link>
-      <Link to="/agents">Agents</Link>
-      <Link to="/runs">Runs</Link>
-      <Link to="/approvals">Approvals</Link>
-      <Link to="/integrations">Integrations</Link>
-      <Link to="/audit">Audit Logs</Link>
-      <Link to="/reports">Reports</Link>
+    <nav className="app-nav">
+      {links.map(([to, label, exact]) => (
+        <NavLink
+          key={to}
+          to={to}
+          exact={!!exact}
+          className="app-nav__link"
+          activeClassName="app-nav__link--active"
+        >
+          {label}
+        </NavLink>
+      ))}
     </nav>
   );
 }

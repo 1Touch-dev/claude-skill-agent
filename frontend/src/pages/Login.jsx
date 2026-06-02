@@ -24,22 +24,34 @@ function Login() {
   }
 
   return (
-    <main style={{ maxWidth: 420, margin: '2rem auto', padding: '0 1rem' }}>
-      <h2>Admin sign in</h2>
-      <p>Use the <code>ADMIN_TOKEN</code> value from <code>.env</code> (default: <code>changeme</code>).</p>
-      <form onSubmit={handleSubmit}>
-        <label htmlFor="token">Admin token</label>
-        <input
-          id="token"
-          type="password"
-          value={token}
-          onChange={(e) => setToken(e.target.value)}
-          style={{ display: 'block', width: '100%', margin: '0.5rem 0 1rem', padding: '0.5rem' }}
-          autoComplete="off"
-        />
-        {error && <p style={{ color: 'crimson' }}>{error}</p>}
-        <button type="submit">Sign in</button>
-      </form>
+    <main className="login-page">
+      <section className="login-card">
+        <p className="login-card__eyebrow">Admin Access</p>
+        <h2>Sign in to the control plane</h2>
+        <p className="status status--muted">
+          Use the <code>ADMIN_TOKEN</code> value from <code>.env</code> (default: <code>changeme</code>).
+        </p>
+        <form onSubmit={handleSubmit} className="login-form">
+          <label htmlFor="token">Admin token</label>
+          <input
+            id="token"
+            type="password"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            className="field-input"
+            autoComplete="off"
+          />
+          {error && <p className="status status--error">{error}</p>}
+          <button type="submit" className="btn-primary">Sign in</button>
+        </form>
+      </section>
+      <section className="login-side">
+        <h3>Enterprise Claude Skills Platform</h3>
+        <p>
+          Manage skill catalog governance, customer entitlements, agent operations, approvals, and reporting with a
+          single enterprise control plane.
+        </p>
+      </section>
     </main>
   );
 }
