@@ -353,3 +353,17 @@ Files changed for UI/UX delivery:
 
 - The platform now has a coherent, production-leaning visual foundation suitable for continued feature development.
 - Remaining UX work is mainly depth/feature UX (charts, inline actions, rich forms, edit/create flows), not base visual quality.
+
+### Post-delivery correction (layout distortion fix)
+
+After initial rollout, a layout issue was observed where the sidebar dominated the viewport and the website appeared visually distorted on smaller/embedded widths. A corrective redesign pass was applied and verified.
+
+Fixes applied:
+- Reworked shell behavior to mobile-first block layout, then desktop grid only on wider screens.
+- Converted navigation to responsive horizontal-wrap style for non-desktop widths.
+- Restricted sticky full-height sidebar behavior to large desktop breakpoints only.
+- Ensured main content width and overflow handling prevents horizontal clipping/distortion.
+
+Validation:
+- Verified corrected rendering on `http://127.0.0.1:3001/audit` in browser MCP with proper hierarchy, spacing, and visibility.
+- Confirmed navigation and content now render as a normal website layout on narrower viewport widths.

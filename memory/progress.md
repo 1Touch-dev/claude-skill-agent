@@ -73,4 +73,9 @@ MANDATORY AFTER COMPLETION:
 - Rebuilt and validated frontend/backend in Docker, verified frontend HTTP availability, and re-ran backend tests successfully.
 - Performed browser-based E2E checks via Cursor browser MCP for login, dashboard, and routed data pages.
 
+## [2026-06-02T10:22:00Z] TUE-05 Hotfix Delivered
+- Fixed responsive layout distortion reported on `/audit` and similar routes.
+- Updated shell/nav behavior to mobile-first layout with desktop-only sticky sidebar at larger breakpoints.
+- Revalidated in browser MCP at `http://127.0.0.1:3001/audit`; page now renders as a normal, readable website layout.
+
 
