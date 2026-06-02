@@ -44,3 +44,10 @@ MANDATORY AFTER COMPLETION:
 - Clean up macOS metadata filesystem junk files (`._*`) during executions to avoid cluttering git commits and Jest test runs.
 - Commit lockfiles updates following dependency installation to keep baseline locked versions consistent.
 
+## [2026-06-02T12:30:00Z] TUE-02 Decisions
+- Deploy the entire application stack using Docker Compose to ensure consistency across staging and production.
+- Refactor backend and frontend folders to include production Dockerfiles using lightweight node:18-alpine bases.
+- Inject private API tokens securely in docker-compose.yml by utilizing standard compose environment variable placeholders (resolving GITHUB_TOKEN and GH_TOKEN dynamically from the ignored .env file), ensuring secrets are never checked in to git history.
+- Map the frontend's api base endpoint to the public IP of the remote AWS EC2 instance, enabling client browsers to contact the backend over the network.
+
+
