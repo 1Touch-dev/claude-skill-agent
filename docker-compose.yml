@@ -5,9 +5,15 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=enterprise_claude_skills
+      - PGHOST=postgres
+      - PGPORT=5432
+      - PGUSER=postgres
+      - PGPASSWORD=postgres
+      - PGDATABASE=enterprise_claude_skills
+      - REDIS_URL=redis://redis:6379
+      - ADMIN_TOKEN=changeme
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GH_TOKEN=${GH_TOKEN}
     depends_on:
       - postgres
       - redis
