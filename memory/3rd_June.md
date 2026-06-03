@@ -205,7 +205,7 @@ MVP is suitable for stakeholder walkthrough when we clearly label mock integrati
 | Item | Value |
 |------|--------|
 | **Branch** | `feature/mvp-completion-june-3` |
-| **Latest commit** | `8e31cde` |
+| **Latest commit** | `cb977f1` (docs sprint; main docs in `798e111`) |
 | **Demo UI** | http://54.167.31.169:3001 |
 | **Demo API** | http://54.167.31.169:3000 |
 | **Demo token** | `changeme` |
