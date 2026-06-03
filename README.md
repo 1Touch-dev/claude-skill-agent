@@ -104,6 +104,20 @@ docker compose up -d --build
 - **Local:** http://localhost:3001 (UI), http://localhost:3000 (API)  
 - **EC2:** http://54.167.31.169:3001 — open security group ports **3000** and **3001**
 
+### Keep running after you disconnect (EC2)
+
+The app runs **on the EC2 server**, not on your laptop. Closing Cursor or your laptop does **not** stop it.
+
+All services use `restart: unless-stopped` — they stay up across crashes and **auto-start after an EC2 reboot** (Docker is enabled on boot).
+
+```bash
+# Deploy latest and leave it running
+git pull origin feature/mvp-completion-june-3
+docker compose up -d --build
+```
+
+Verify anytime: `curl http://54.167.31.169:3000/health/live`
+
 ### Native setup
 
 See [docs/SETUP.md](docs/SETUP.md) for Postgres migrations and `npm run dev` / `npm start`.

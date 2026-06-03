@@ -1,6 +1,9 @@
+# Runs on EC2 independently of your laptop/Cursor session.
+# restart: unless-stopped keeps the site up after reboots and crashes.
 services:
   backend:
     build: ./backend
+    restart: unless-stopped
     ports:
       - "3000:3000"
     env_file:
@@ -20,6 +23,7 @@ services:
       - redis
   frontend:
     build: ./frontend
+    restart: unless-stopped
     ports:
       - "3001:3001"
     env_file:
@@ -32,6 +36,7 @@ services:
       - CHOKIDAR_USEPOLLING=true
   postgres:
     image: postgres:13
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -40,5 +45,6 @@ services:
       - "5432:5432"
   redis:
     image: redis:6
+    restart: unless-stopped
     ports:
       - "6379:6379"
