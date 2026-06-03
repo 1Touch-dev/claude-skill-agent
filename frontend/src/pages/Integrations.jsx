@@ -75,7 +75,6 @@ export default function Integrations() {
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Delete this integration?')) return;
     try {
       await apiDelete(`/integrations/${id}`);
       setMsg('Integration removed.');
