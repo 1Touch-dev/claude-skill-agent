@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Redirect, useLocation } from 'react-router-dom';
-
-const TOKEN_KEY = 'admin_token';
+import { getAdminToken, setAdminSession, TOKEN_KEY } from '../lib/api';
 
 function Login() {
   const location = useLocation();
   const [token, setToken] = useState('');
+  const [role, setRole] = useState('admin');
   const [error, setError] = useState('');
 
-  if (localStorage.getItem(TOKEN_KEY)) {
+  if (getAdminToken()) {
     const from = location.state?.from?.pathname || '/';
     return <Redirect to={from} />;
   }
@@ -19,7 +19,7 @@ function Login() {
       setError('Enter the admin token from your .env file (ADMIN_TOKEN).');
       return;
     }
-    localStorage.setItem(TOKEN_KEY, token.trim());
+    setAdminSession(token.trim(), role);
     window.location.href = location.state?.from?.pathname || '/';
   }
 
@@ -41,6 +41,17 @@ function Login() {
             className="field-input"
             autoComplete="off"
           />
+          <label htmlFor="role">Role (MVP)</label>
+          <select
+            id="role"
+            className="field-input"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+          >
+            <option value="admin">admin</option>
+            <option value="operator">operator</option>
+            <option value="viewer">viewer</option>
+          </select>
           {error && <p className="status status--error">{error}</p>}
           <button type="submit" className="btn-primary">Sign in</button>
         </form>

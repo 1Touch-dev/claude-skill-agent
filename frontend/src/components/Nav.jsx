@@ -14,6 +14,7 @@ export default function Nav() {
     ['/credit-pools', 'Credit Pools'],
     ['/agents', 'Agents'],
     ['/runs', 'Runs'],
+    ['/routing', 'Routing Demo'],
     ['/approvals', 'Approvals'],
     ['/integrations', 'Integrations'],
     ['/audit', 'Audit Logs'],

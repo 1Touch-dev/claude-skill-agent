@@ -7,6 +7,7 @@ export default function Reports(){
   const [agents, setAgents] = useState({ byAgent:[] });
   const [gov, setGov] = useState({});
   const [billing, setBilling] = useState({ monthly:[] });
+  const [summary, setSummary] = useState(null);
   const [err, setErr] = useState('');
 
   useEffect(()=>{
@@ -15,8 +16,9 @@ export default function Reports(){
       apiGet('/reports/adoption'),
       apiGet('/reports/agents/utilization'),
       apiGet('/reports/governance'),
-      apiGet('/reports/billing')
-    ]).then(([c,a,ag,g,b])=>{ setCredits(c); setAdoption(a); setAgents(ag); setGov(g); setBilling(b); })
+      apiGet('/reports/billing'),
+      apiGet('/dashboard/summary'),
+    ]).then(([c,a,ag,g,b,s])=>{ setCredits(c); setAdoption(a); setAgents(ag); setGov(g); setBilling(b); setSummary(s); })
       .catch(e=>setErr(String(e)));
   },[]);
 
@@ -26,6 +28,29 @@ export default function Reports(){
         <h2>Reporting & Analytics</h2>
       </div>
       {err && <div className="status status--error">{err}</div>}
+      {summary && (
+        <section className="panel">
+          <h3>Platform Snapshot</h3>
+          <div className="metrics-inline">
+            <span>Skills: {summary.totals?.skills}</span>
+            <span>Active: {summary.totals?.active_skills}</span>
+            <span>Runs: {summary.totals?.runs}</span>
+            <span>Pending approvals: {summary.totals?.pending_approvals}</span>
+            <span>Integrations: {summary.totals?.integrations}</span>
+          </div>
+        </section>
+      )}
+      <section className="panel">
+        <h3>Skills by Lifecycle</h3>
+        <ul className="simple-list">
+          {(summary?.skills_by_lifecycle || []).map((r) => (
+            <li key={r.lifecycle}>
+              <span>{r.lifecycle}</span>
+              <strong>{r.count}</strong>
+            </li>
+          ))}
+        </ul>
+      </section>
       <section className="panel">
         <h3>Credit Consumption (30d)</h3>
         <div>Total: {credits.total}</div>

@@ -1,9 +1,31 @@
 const API_BASE = process.env.REACT_APP_API_BASE || '';
-const TOKEN_KEY = 'admin_token';
+export const TOKEN_KEY = 'admin_token';
+const ROLE_KEY = 'admin_role';
+
+export function getAdminToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function getAdminRole() {
+  return localStorage.getItem(ROLE_KEY) || 'admin';
+}
+
+export function setAdminSession(token, role = 'admin') {
+  localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(ROLE_KEY, role);
+}
+
+export function clearAdminSession() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(ROLE_KEY);
+}
 
 function authHeaders() {
-  const token = localStorage.getItem(TOKEN_KEY);
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  const token = getAdminToken();
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  const role = getAdminRole();
+  if (role) headers['x-user-role'] = role;
+  return headers;
 }
 
 async function request(path, options = {}) {
@@ -23,8 +45,21 @@ async function request(path, options = {}) {
       `Cannot reach API at ${url}. Start the backend (port 3000) and confirm REACT_APP_API_BASE in frontend/.env.`
     );
   }
-  if (!res.ok) throw new Error(`${options.method || 'GET'} ${path} failed: ${res.status}`);
-  return res.json();
+  if (res.status === 204) return null;
+  const text = await res.text();
+  if (!res.ok) {
+    let message = `${options.method || 'GET'} ${path} failed: ${res.status}`;
+    try {
+      const body = text ? JSON.parse(text) : {};
+      if (body.message) message = body.message;
+      else if (body.error) message = body.error;
+    } catch (_) {
+      /* ignore */
+    }
+    throw new Error(message);
+  }
+  if (!text) return null;
+  return JSON.parse(text);
 }
 
 export async function apiGet(path) {
