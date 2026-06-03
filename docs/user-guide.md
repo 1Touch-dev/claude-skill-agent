@@ -1,0 +1,337 @@
+# Enterprise Claude Skills Platform — User Guide
+
+**Audience:** Business users, managers, and stakeholders (non-technical)  
+**MVP demo environment:** http://54.167.31.169:3001  
+**Last updated:** June 2026
+
+---
+
+## What Is This System?
+
+The **Enterprise Claude Skills Platform** is a **multi-tenant AI control plane**. Think of it as the “operating system” your company uses to govern how AI skills and agents are licensed, deployed, monitored, and audited across teams and customers.
+
+It is **not** a general project-management tool or a chat window. It is the **governance and operations console** for enterprise AI capability.
+
+```mermaid
+flowchart TB
+  subgraph ControlPlane["Enterprise Claude Skills Control Plane"]
+    SK[Skill Registry]
+    SU[Department Suites]
+    OV[Industry Overlays]
+    AG[Agent Profiles]
+    AP[Approvals]
+    AU[Audit Logs]
+    IN[Integrations]
+    CR[Credit Metering]
+  end
+  subgraph Tenants["Tenants"]
+    C1[Customer A]
+    C2[Customer B]
+    W1[Workspace]
+    W2[Workspace]
+  end
+  SK --> AG
+  SU --> SK
+  OV --> SK
+  AG --> RUN[Skill Runs]
+  RUN --> AP
+  RUN --> AU
+  IN --> AG
+  CR --> RUN
+  C1 --> W1
+  C2 --> W2
+  W1 --> AG
+  W2 --> AG
+```
+
+### Core capabilities
+
+| Capability | What it means for the business |
+|------------|--------------------------------|
+| **Multi-tenant AI control plane** | One platform serves many customers and workspaces with isolated configuration. |
+| **Skills governance** | Every AI skill is registered, versioned, and controlled (lifecycle, risk, review). |
+| **Agent management** | AI agents are defined with allowed skills, autonomy level, and workspace scope. |
+| **Department suites** | Skills are packaged for departments (Marketing, Engineering, GRC, etc.). |
+| **Industry overlays** | Add-on capability packs for industries (SaaS, FinServ, Healthcare, etc.). |
+| **Approvals** | High-risk runs can require human approve/reject before proceeding. |
+| **Audit logging** | Every important action on a run is recorded for compliance and troubleshooting. |
+| **Integrations** | Registry for tools like GitHub, Slack, and Asana (connection status and health). |
+| **Usage metering** | Skill runs consume credits; pools and reports support chargeback and planning. |
+
+---
+
+## Logging In
+
+**URL:** http://54.167.31.169:3001/login
+
+**Demo token:** `changeme`
+
+### Roles
+
+| Role | Who typically uses it | What they can do in the MVP |
+|------|----------------------|-----------------------------|
+| **Admin** | Platform owner, IT lead | Full access: view all modules, approve/reject, create integrations, routing demo. |
+| **Operator** | Team lead, ops | Manage runs, approvals, integrations; same write access as admin in MVP. |
+| **Viewer** | Executive, auditor | Read-only visibility across dashboards and lists. |
+
+**How to sign in**
+
+1. Open the login URL in your browser.
+2. Enter the admin token (`changeme` for demo).
+3. Select your role (Admin for demos).
+4. Click **Continue to control plane**.
+5. You land on the **Executive Dashboard**.
+
+To sign out, use **Log out** in the top header.
+
+---
+
+## Dashboard
+
+**Menu:** Dashboard  
+**Purpose:** Live snapshot of platform health and scale.
+
+| Metric | Meaning |
+|--------|---------|
+| **Total / Active Skills** | How many skills exist and how many are enabled for use. |
+| **Agents** | Configured AI agent profiles that can execute skills. |
+| **Runs** | Completed or in-progress skill executions. |
+| **Pending Approvals** | Runs waiting for a human decision. |
+| **Integrations** | Registered external connectors; “connected” shows healthy/mock-connected count. |
+| **Customers / Workspaces** | Commercial tenants and their isolated environments. |
+
+Metrics are loaded from the live API — they are **not** hardcoded numbers.
+
+---
+
+## Skills
+
+**Menu:** Skills
+
+The **skill registry** is the catalog of governed AI capabilities (e.g. “Campaign Brief Generator”).
+
+| Concept | Explanation |
+|---------|-------------|
+| **Skill key** | Unique identifier used when routing work to an agent. |
+| **Lifecycle** | State such as enabled, disabled, or quarantined. |
+| **Risk tier** | How sensitive the skill is (higher tier → more likely to need approval). |
+| **Trust / review** | Governance labels from security review (MVP shows seeded demo values). |
+
+**Search:** Use the search box to filter by skill name (e.g. type “Campaign” to find marketing skills).
+
+---
+
+## Packages
+
+**Menu:** Packages
+
+**Skill packages** tie a skill to a version, registry source, and integrity metadata. This supports provenance and change control in enterprise deployments.
+
+---
+
+## Suites & Overlays
+
+### Department Suites
+
+**Menu:** Suites
+
+Bundles of skills aimed at a **department** (Marketing, Engineering, Customer Success, etc.). Used for licensing and activation by team.
+
+### Industry Overlays
+
+**Menu:** Overlays
+
+Add-on packs for **industries** (e.g. FinServ, Healthcare). Customers can license overlays on top of base suites.
+
+```mermaid
+flowchart LR
+  SK[Skills] --> PKG[Packages]
+  PKG --> SU[Department Suite]
+  PKG --> OV[Industry Overlay]
+  SU --> WS[Workspace Activation]
+  OV --> WS
+```
+
+---
+
+## Customers, Workspaces, Entitlements, Credit Pools
+
+| Menu | Purpose |
+|------|---------|
+| **Customers** | Top-level commercial accounts (e.g. Acme Corp, Globex Inc). |
+| **Workspaces** | Isolated environments under a customer. |
+| **Entitlements** | What each workspace is licensed to use. |
+| **Credit Pools** | Metering buckets for skill credit consumption. |
+
+These screens support **multi-tenant operations** and future billing models.
+
+---
+
+## Agents
+
+**Menu:** Agents
+
+An **agent** is a configured executor: which workspace it belongs to, which skills it may run, and its **autonomy level** (how much it can do without human oversight).
+
+Agents do not “think” inside this UI — the platform **governs and routes** work to them. Execution is represented by **runs** and **routing demo** flows.
+
+---
+
+## Runs
+
+**Menu:** Runs
+
+A **run** is one execution of a skill (queued, awaiting approval, succeeded, failed, etc.). Use this list to see operational history and status.
+
+---
+
+## Approvals
+
+**Menu:** Approvals
+
+When a skill or run is **high risk**, an **approval gate** may require a human decision.
+
+| Action | Effect |
+|--------|--------|
+| **Approve** | Run moves forward (approved state); decision is audited. |
+| **Reject** | Run is rejected / failed; reason is stored. |
+
+In demo, if no pending items appear, an operator can seed a pending approval (technical step) — during live demos you should see pending rows when prepared.
+
+---
+
+## Integrations
+
+**Menu:** Integrations
+
+The **integration registry** lists external systems (Asana, GitHub, Slack, Monday, Trello).
+
+| Feature | Description |
+|---------|-------------|
+| **Status** | connected, disconnected, error (visual badges). |
+| **Test connection** | Validates configuration (MVP uses **mock** validation — not live OAuth). |
+| **Create / delete** | Register or remove a connector record for a workspace. |
+
+> **Important for stakeholders:** The MVP proves the **integration control plane** (registry, status, test workflow). It does **not** perform live sync with vendor APIs yet. See [mvp-known-limitations.md](mvp-known-limitations.md).
+
+---
+
+## Routing Demo
+
+**Menu:** Routing Demo
+
+Shows how work enters the platform and gets **routed to an agent**:
+
+1. **Create task** — title, workspace, skill key (e.g. `mkt_campaign_brief` for marketing).
+2. **Route & apply** — engine picks an agent and creates orchestration records.
+3. **Result** — confirms which agent was selected; run/orchestration data is persisted.
+
+Use skill keys that match agent permissions (demo: `mkt_campaign_brief` on workspace 2).
+
+---
+
+## Audit Logs
+
+**Menu:** Audit Logs
+
+**Why audit logs exist:** Compliance, security investigations, and proving who approved what and when.
+
+**How to use:** Enter a **Run ID** (from the Runs page) and click **Load**. Events such as `approval_required`, `approval_granted`, or `approval_denied` appear in a list.
+
+---
+
+## Reports
+
+**Menu:** Reports
+
+| Panel | Purpose |
+|-------|---------|
+| **Platform snapshot** | Skills, runs, approvals, integrations at a glance. |
+| **Skills by lifecycle** | How many skills are enabled vs other states. |
+| **Credit consumption** | Usage over time (demo data). |
+| **Adoption** | Suite/overlay adoption placeholders. |
+| **Agent utilization** | Runs per agent. |
+| **Governance** | Approval required / granted / denied counts. |
+| **Billing** | Monthly usage summary. |
+
+---
+
+# Example Walkthrough
+
+**Scenario:** The marketing team wants a **campaign brief** generated and governed through the platform.
+
+**Time:** ~5 minutes  
+**Role:** Admin  
+**Token:** `changeme`
+
+### Step 1 — Login as Admin
+
+1. Go to http://54.167.31.169:3001/login  
+2. Enter token `changeme`, select **Admin**, continue.  
+3. Confirm you see the Executive Dashboard.
+
+### Step 2 — Open Dashboard
+
+- Note **Total Skills**, **Agents**, **Runs**, **Customers**.  
+- These numbers come from the live system (e.g. 6 skills, 2 agents in demo seed).
+
+### Step 3 — Review Skills
+
+1. Open **Skills**.  
+2. Search for **Campaign**.  
+3. Confirm **Campaign Brief Generator** exists with lifecycle **enabled**.
+
+### Step 4 — Verify marketing context (optional)
+
+- Open **Suites** → find **Marketing Suite**.  
+- Open **Agents** → **Globex Agent** (workspace 2) includes `mkt_campaign_brief`.
+
+### Step 5 — Routing Demo
+
+1. Open **Routing Demo**.  
+2. Set workspace **2**, title e.g. “Q3 Product Launch Campaign Brief”.  
+3. Skill key: `mkt_campaign_brief`.  
+4. Click **Create Task**.  
+5. Click **Route & Apply** on the new task.  
+6. Confirm success message and **Last Routing Result** (agent name shown).
+
+### Step 6 — Verify run created
+
+1. Open **Runs**.  
+2. Find the new or updated run / task evidence.  
+3. Note state (e.g. queued, approved, succeeded).
+
+### Step 7 — Audit trail
+
+1. Open **Audit Logs**.  
+2. Enter the **Run ID** from Runs.  
+3. Click **Load** — see approval and execution events.
+
+### Step 8 — Reports
+
+1. Open **Reports**.  
+2. Review **Platform snapshot** and **Skills by lifecycle**.  
+3. Point out governance and credit panels for executives.
+
+**Outcome for James:** In five minutes you have shown **governance (skills) → operations (routing) → compliance (audit) → executive visibility (reports)**.
+
+---
+
+## Screenshots
+
+Reference captures from live browser testing: [screenshots/README.md](screenshots/README.md)
+
+---
+
+## Related documentation
+
+| Document | Audience |
+|----------|----------|
+| [mvp-demo-script.md](mvp-demo-script.md) | Presenter script for stakeholder demo |
+| [mvp-known-limitations.md](mvp-known-limitations.md) | Honest MVP boundaries |
+| [mvp-acceptance-report.md](mvp-acceptance-report.md) | QA and acceptance evidence |
+| [live-browser-test-report.md](live-browser-test-report.md) | Live browser proof |
+
+---
+
+*Enterprise Claude Skills Platform — MVP user guide*

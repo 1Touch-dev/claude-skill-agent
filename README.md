@@ -1,310 +1,224 @@
 # Enterprise Claude Skills Platform
 
-A multi-tenant **AI control plane** for governing Claude Skills, agents, department suites, industry overlays, licensing, metering, and audit across enterprise workspaces.
+A multi-tenant **AI control plane** for governing Claude skills, agents, department suites, industry overlays, licensing, metering, approvals, audit, and integrations across enterprise workspaces.
 
-> **Status:** v1 foundation — demoable locally, not yet production-ready.  
-> See [docs/HANDBOOK_GAP_ANALYSIS.md](docs/HANDBOOK_GAP_ANALYSIS.md) for full requirement coverage.
-
----
-
-## What This Is
-
-This is **not** a task manager or a prompt library. It is an enterprise AI work orchestration platform that lets organizations:
-
-- Register and govern **Claude Skills** as licensed product units
-- Bundle skills into **department suites** and **industry overlays**
-- Assign skills to **AI agents** with defined permissions and autonomy
-- Control access by **workspace**, **customer**, **entitlement**, and **risk tier**
-- **Meter usage** through skill credits and subscription tiers
-- Enforce **security review**, **quarantine**, and **audit logging**
+> **MVP status (June 2026):** Stakeholder-demo ready on branch `feature/mvp-completion-june-3`.  
+> See [docs/mvp-known-limitations.md](docs/mvp-known-limitations.md) for honest boundaries.
 
 ---
 
-## Tech Stack
+## Project Overview
+
+This is **not** a task manager or a prompt library. It is an enterprise **governance and operations console** that lets organizations:
+
+- Register and govern **Claude Skills** as licensed product units  
+- Bundle skills into **department suites** and **industry overlays**  
+- Assign skills to **AI agents** with permissions and autonomy levels  
+- Control access by **workspace**, **customer**, **entitlement**, and **risk tier**  
+- **Meter usage** through skill credits and subscription tiers  
+- Enforce **approvals**, **audit logging**, and **integration registry** workflows  
+
+**Live demo (EC2):**
+
+| Service | URL |
+|---------|-----|
+| Admin UI | http://54.167.31.169:3001 |
+| API | http://54.167.31.169:3000 |
+| Login | http://54.167.31.169:3001/login |
+
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+  UI[React Admin UI :3001]
+  API[Express API :3000]
+  DB[(PostgreSQL)]
+  RD[(Redis)]
+  UI --> API
+  API --> DB
+  API --> RD
+```
 
 | Layer | Technology |
-|-------|-----------|
+|-------|------------|
 | Backend | Node.js, Express |
 | Frontend | React 17 (admin UI) |
-| Database | PostgreSQL 13+ |
-| Cache / Queue | Redis + BullMQ (deps present, workers not yet operational) |
-| Container | Docker Compose (optional) |
+| Database | PostgreSQL 13 |
+| Cache / Queue | Redis (workers planned) |
+| Deploy | Docker Compose |
+
+Detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
+---
+
+## Features (MVP)
+
+| Module | Admin UI | API | MVP notes |
+|--------|----------|-----|-----------|
+| Executive Dashboard | ✅ | ✅ | Live metrics from `/api/dashboard/summary` |
+| Skill Registry & Packages | ✅ | ✅ | Search, pagination |
+| Department Suites & Overlays | ✅ | ✅ | |
+| Customers, Workspaces, Entitlements | ✅ | ✅ | |
+| Credit Pools | ✅ | ✅ | |
+| Agent Profiles | ✅ | ✅ | |
+| Skill Runs | ✅ | ✅ | |
+| Approvals | ✅ | ✅ | Approve / reject |
+| Audit Logs | ✅ | ✅ | By run ID |
+| Integrations | ✅ | ✅ | Mock test connection |
+| Routing Demo | ✅ | ✅ | Task → route → apply |
+| Reports | ✅ | ✅ | Multiple report endpoints |
+| Auth | ✅ | ⚠️ | Bearer token + roles (not SSO) |
+
+---
+
+## MVP Scope
+
+**In scope:** Control-plane CRUD, live dashboard, MVP auth, approvals, integration registry + mock test, routing demo, reports, Docker on EC2, QA acceptance.
+
+**Out of scope:** SSO, production OAuth, webhooks, workers, RAG, full PM app, enterprise observability.
+
+Full list: [docs/mvp-known-limitations.md](docs/mvp-known-limitations.md)
+
+---
+
+## Installation
+
+### Prerequisites
+
+- Node.js 18+ **or** Docker  
+- PostgreSQL 13+ (provided by Docker Compose)  
+
+### Docker setup (recommended for demo)
+
+```bash
+git clone https://github.com/1Touch-dev/claude-skill-agent.git
+cd claude-skill-agent
+git checkout feature/mvp-completion-june-3
+cp .env.example .env
+# EC2: set PUBLIC_API_URL=http://<your-ip>:3000 and PUBLIC_UI_URL=http://<your-ip>:3001
+docker compose up -d --build
+```
+
+- **Local:** http://localhost:3001 (UI), http://localhost:3000 (API)  
+- **EC2:** http://54.167.31.169:3001 — open security group ports **3000** and **3001**
+
+### Native setup
+
+See [docs/SETUP.md](docs/SETUP.md) for Postgres migrations and `npm run dev` / `npm start`.
+
+```bash
+cp .env.example .env
+cp frontend/.env.example frontend/.env
+cd backend && npm install && npm run migrate
+cd backend && npm run dev    # port 3000
+cd frontend && npm install && npm start   # port 3001
+```
+
+---
+
+## Demo Credentials
+
+| Setting | Value |
+|---------|--------|
+| **Login URL** | http://54.167.31.169:3001/login |
+| **Token** | `changeme` (from `ADMIN_TOKEN` in `.env`) |
+| **Roles** | `admin`, `operator`, `viewer` |
+
+**5-minute stakeholder script:** [docs/mvp-demo-script.md](docs/mvp-demo-script.md)  
+**Business user guide:** [docs/user-guide.md](docs/user-guide.md)
+
+---
+
+## API Endpoints (summary)
+
+Prefix: `/api` (authenticated via `Authorization: Bearer <token>` and optional `x-user-role` header).
+
+| Area | Key endpoints |
+|------|----------------|
+| Dashboard | `GET /dashboard/summary` |
+| Registry | `GET/POST/PUT/DELETE /skills`, `/packages` |
+| Suites | `GET/POST /suites`, `/overlays` |
+| Commercial | `GET/POST /customers`, `/workspaces`, `/entitlements`, `/credit-pools` |
+| Agents | `GET/POST /agents` |
+| Runs | `GET/POST /runs`, `GET /runs/:id/audit` |
+| Approvals | `GET /approvals`, `POST /approvals/:id/decide` |
+| Integrations | `GET/POST/PUT/DELETE /integrations`, `POST /integrations/:id/test` |
+| Routing | `GET/POST /tasks`, `POST /route`, `POST /route/apply` |
+| Reports | `GET /reports/*` |
+| Health | `GET /health/live`, `GET /health/ready` |
+
+Full validation: [docs/api-validation-report.md](docs/api-validation-report.md)
+
+---
+
+## Documentation
+
+### Start here (stakeholder / new team member)
+
+| Document | Purpose |
+|----------|---------|
+| **[docs/user-guide.md](docs/user-guide.md)** | Non-technical guide + 5-minute example walkthrough |
+| **[docs/mvp-demo-script.md](docs/mvp-demo-script.md)** | 5-minute executive demo script |
+| **[docs/mvp-known-limitations.md](docs/mvp-known-limitations.md)** | Honest MVP boundaries |
+
+### QA and acceptance
+
+| Document | Purpose |
+|----------|---------|
+| [docs/mvp-acceptance-report.md](docs/mvp-acceptance-report.md) | MVP acceptance verdict |
+| [docs/api-validation-report.md](docs/api-validation-report.md) | API endpoint matrix |
+| [docs/live-browser-test-report.md](docs/live-browser-test-report.md) | Live Cursor browser proof |
+
+### Sprint history
+
+| Document | Purpose |
+|----------|---------|
+| [memory/3rd_June.md](memory/3rd_June.md) | MVP completion sprint log |
+| [memory/2nd_June.md](memory/2nd_June.md) | Full requirements / completion plan |
+
+### Technical reference
+
+| Document | Purpose |
+|----------|---------|
+| [docs/SETUP.md](docs/SETUP.md) | Install and run |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design |
+| [docs/HANDBOOK_GAP_ANALYSIS.md](docs/HANDBOOK_GAP_ANALYSIS.md) | Requirements vs build |
+| [docs/OPERATIONS.md](docs/OPERATIONS.md) | Operations notes |
 
 ---
 
 ## Project Structure
 
 ```
-Cloude-Skills-agents/
-├── backend/
-│   ├── src/
-│   │   ├── app.js              # Express app (exported for tests)
-│   │   ├── index.js            # Server entry point
-│   │   ├── routes/             # API route modules
-│   │   └── lib/                # DB pool, metering
-│   ├── db/migrations/          # PostgreSQL schema (0002–0007)
-│   ├── scripts/migrate.js      # Migration runner
-│   └── tests/                  # Jest + Supertest
-├── frontend/
-│   ├── src/
-│   │   ├── pages/              # Admin list/report pages
-│   │   ├── components/         # Nav, Header, AdminGuard
-│   │   └── lib/api.js          # API client
-│   └── public/index.html
-├── docs/                       # Setup, architecture, gap analysis
-├── memory/                     # Project context, progress, decisions
+claude-skill-agent/
+├── backend/           # Express API, migrations, tests
+├── frontend/          # React admin UI
+├── docs/              # User guide, demo script, QA reports
+├── memory/            # Sprint logs and progress
+├── scripts/           # api-validate.sh
 ├── docker-compose.yml
-├── .env.example
-└── .gitignore
+└── .env.example
 ```
-
----
-
-## Quick Start (Native — Windows / macOS / Linux)
-
-### Prerequisites
-
-- Node.js 18+
-- PostgreSQL 13+ (running locally)
-- Redis 6+ (optional for now)
-
-### 1. Environment
-
-```bash
-cp .env.example .env
-cp frontend/.env.example frontend/.env
-```
-
-Edit `.env` — set your Postgres port if not default (`PGPORT=5434` on some Windows installs).
-
-### 2. Database
-
-```bash
-# Create database (once)
-psql -U postgres -c "CREATE DATABASE enterprise_skills;"
-
-# Run migrations + demo seed
-cd backend
-npm install
-npm run migrate
-```
-
-### 3. Backend (port 3000)
-
-```bash
-cd backend
-npm run dev
-# → Backend running on port 3000
-```
-
-### 4. Frontend (port 3001)
-
-```bash
-cd frontend
-npm install
-npm start
-# → http://localhost:3001
-```
-
-**Login:** use `ADMIN_TOKEN` from `.env` (default: `changeme`)
-
-### Health Check
-
-```
-GET http://localhost:3000/health/live
-→ { "status": "ok", "live": true }
-```
-
----
-
-## Quick Start (Docker)
-
-```bash
-cp .env.example .env
-# On EC2: set PUBLIC_API_URL and PUBLIC_UI_URL to your instance public IP/DNS
-docker compose up --build
-```
-
-- **Local:** API http://localhost:3000 — Admin UI http://localhost:3001  
-- **EC2 / remote:** open `http://<public-ip>:3001` — the UI calls `http://<public-ip>:3000` (set `PUBLIC_API_URL` in `.env` or rely on auto hostname detection). Ensure security group allows inbound **3000** and **3001**.
-
----
-
-## Implemented Modules
-
-| Module | Backend API | Admin UI | Status |
-|--------|------------|----------|--------|
-| Skill Registry | ✅ | ✅ | Working |
-| Skill Packages | ✅ | ✅ | Working |
-| Department Suites | ✅ | ✅ | Working |
-| Industry Overlays | ✅ | ✅ | Working |
-| Customers & Workspaces | ✅ | ✅ | Working |
-| Entitlements & Licensing | ✅ | ✅ | Working |
-| Credit Pools & Metering | ✅ | ✅ | Working |
-| Agent Profiles | ✅ | ✅ | Working |
-| Skill Runs & Audit | ✅ | ✅ | Working |
-| Security (pin/review/quarantine) | ✅ | — | API only |
-| Reports & Analytics | ✅ | ✅ | Working |
-| Task Intake & Routing | ✅ | — | API only |
-| Approvals Queue | — | ⚠️ | UI exists, no API yet |
-| Auth / RBAC | — | ⚠️ | Token-only (localStorage) |
-| External Integrations | — | — | Not started |
-| Background Workers | — | — | Not started |
-| Knowledge / Search / RAG | — | — | Not started |
-
----
-
-## API Overview
-
-All routes are prefixed with `/api` unless noted.
-
-### Registry
-```
-GET/POST/PUT/DELETE  /api/skills
-GET/POST/PUT/DELETE  /api/packages
-GET/POST/PUT/DELETE  /api/sources
-```
-
-### Suites & Overlays
-```
-GET/POST/PUT/DELETE  /api/suites
-GET/POST/PUT/DELETE  /api/overlays
-POST                 /api/suites/:id/skills
-POST                 /api/overlays/:id/skills
-POST                 /api/activation/suites/workspace
-POST                 /api/activation/overlays/workspace
-```
-
-### Commercial
-```
-GET/POST             /api/customers
-GET/POST             /api/workspaces
-GET/POST             /api/plans
-GET/POST             /api/subscriptions
-GET/POST             /api/entitlements
-GET/POST             /api/credit-pools
-GET                  /api/activation/workspace/:id
-```
-
-### Agents, Tasks & Routing
-```
-GET/POST/PUT/DELETE  /api/agents
-GET/POST/PUT/DELETE  /api/tasks
-POST                 /api/route
-POST                 /api/route/apply
-```
-
-### Runs & Audit
-```
-GET/POST             /api/runs
-POST                 /api/runs/:id/state
-POST                 /api/runs/:id/audit
-POST                 /api/runs/:id/charge
-GET                  /api/runs/:id/audit
-```
-
-### Security
-```
-POST                 /api/security/skills/:id/pin
-POST                 /api/security/skills/:id/scan
-POST                 /api/security/skills/:id/review
-POST                 /api/security/skills/:id/quarantine
-GET                  /api/security/skills/:id/activation-check
-```
-
-### Reports
-```
-GET  /api/reports/credits/summary
-GET  /api/reports/usage/workspace/:id
-GET  /api/reports/adoption
-GET  /api/reports/agents/utilization
-GET  /api/reports/governance
-GET  /api/reports/billing
-GET  /api/reports/cross-sell
-```
-
-### Health
-```
-GET  /health/live
-GET  /health/ready
-```
-
----
-
-## Admin UI Pages
-
-| Page | Route | Data Source |
-|------|-------|-------------|
-| Dashboard | `/` | Static welcome |
-| Skills | `/skills` | `/api/skills` |
-| Packages | `/packages` | `/api/packages` |
-| Suites | `/suites` | `/api/suites` |
-| Overlays | `/overlays` | `/api/overlays` |
-| Customers | `/customers` | `/api/customers` |
-| Workspaces | `/workspaces` | `/api/workspaces` |
-| Entitlements | `/entitlements` | `/api/entitlements` |
-| Credit Pools | `/credit-pools` | `/api/credit-pools` |
-| Agents | `/agents` | `/api/agents` |
-| Runs | `/runs` | `/api/runs` |
-| Approvals | `/approvals` | ⚠️ No API yet |
-| Audit Logs | `/audit` | `/api/runs/:id/audit` |
-| Reports | `/reports` | `/api/reports/*` |
-
----
-
-## Database Migrations
-
-| File | Contents |
-|------|----------|
-| `0002_skill_registry.sql` | Skills, sources, packages, lifecycle enums |
-| `0003_department_suites_overlays.sql` | Suites, overlays, overlay-suite mappings |
-| `0004_commercial.sql` | Customers, workspaces, plans, subscriptions, entitlements, credit pools |
-| `0005_routing.sql` | Agent profiles, task intake, routing tables |
-| `0005_skill_runs_audit.sql` | Skill runs, audit logs, usage charges |
-| `0006_security.sql` | Security metadata, scan history, trust/review fields |
-| `0007_demo_seed.sql` | Demo skills, suites, customers, agents, sample runs |
-
-Run all: `cd backend && npm run migrate`
 
 ---
 
 ## Testing
 
 ```bash
-cd backend
-npm test
+cd backend && npm test
+./scripts/api-validate.sh
 ```
 
-Covers: health endpoint, reports routes, governance presence (mocked DB).
-
 ---
 
-## Roadmap / Deferred
+## Quick Health Check
 
-See [docs/DEFERRED_ITEMS.md](docs/DEFERRED_ITEMS.md) and [docs/HANDBOOK_GAP_ANALYSIS.md](docs/HANDBOOK_GAP_ANALYSIS.md).
-
-**Next priorities:**
-1. Real auth + API RBAC
-2. Approvals workflow API + queue
-3. Background workers (Redis/BullMQ)
-4. External integrations (GitHub, Slack, Asana)
-5. Knowledge search + brand voice RAG
-6. Reporting charts + CSV export
-
----
-
-## Documentation
-
-| Doc | Purpose |
-|-----|---------|
-| [docs/SETUP.md](docs/SETUP.md) | Install and run |
-| [docs/ONBOARDING.md](docs/ONBOARDING.md) | First-time orientation |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System overview |
-| [docs/OPERATIONS.md](docs/OPERATIONS.md) | Running in production |
-| [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) | Pre-release checks |
-| [docs/HANDBOOK_GAP_ANALYSIS.md](docs/HANDBOOK_GAP_ANALYSIS.md) | Requirements vs implementation |
-| [docs/DEFERRED_ITEMS.md](docs/DEFERRED_ITEMS.md) | Known gaps and next issues |
-| [docs/PR_SUMMARY.md](docs/PR_SUMMARY.md) | v1 foundation PR summary |
+```bash
+curl http://54.167.31.169:3000/health/live
+# → {"status":"ok","live":true}
+```
 
 ---
 

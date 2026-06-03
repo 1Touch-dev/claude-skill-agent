@@ -186,4 +186,34 @@ MVP is suitable for stakeholder walkthrough when we clearly label mock integrati
 
 ---
 
+## Documentation Added (pre-stakeholder review)
+
+| File | Purpose |
+|------|---------|
+| [docs/user-guide.md](../docs/user-guide.md) | Non-technical user guide + marketing walkthrough example |
+| [docs/mvp-demo-script.md](../docs/mvp-demo-script.md) | 5-minute executive demo script with talking points |
+| [docs/mvp-known-limitations.md](../docs/mvp-known-limitations.md) | Honest MVP boundaries and roadmap |
+| [docs/api-validation-report.md](../docs/api-validation-report.md) | API endpoint validation matrix |
+| [docs/mvp-acceptance-report.md](../docs/mvp-acceptance-report.md) | MVP acceptance verdict |
+| [docs/live-browser-test-report.md](../docs/live-browser-test-report.md) | Live Cursor browser walkthrough proof |
+| [README.md](../README.md) | Primary entry point — overview, install, links |
+
+---
+
+## Final Project State (June 3, 2026)
+
+| Item | Value |
+|------|--------|
+| **Branch** | `feature/mvp-completion-june-3` |
+| **Latest commit** | `258caae (docs sprint commit)
+| **Demo UI** | http://54.167.31.169:3001 |
+| **Demo API** | http://54.167.31.169:3000 |
+| **Demo token** | `changeme` |
+| **MVP demo readiness** | **PASS** (acceptance + live browser reports) |
+| **Enterprise-complete estimate** | ~35–40% of full requirements docs |
+
+A new team member can: clone the repo → read README → follow [user-guide.md](../docs/user-guide.md) → run `docker compose up` → perform demo via [mvp-demo-script.md](../docs/mvp-demo-script.md) without verbal handoff.
+
+---
+
 *Generated during MVP Completion Sprint — June 3, 2026*
