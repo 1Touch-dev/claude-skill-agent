@@ -1,4 +1,8 @@
-const API_BASE = process.env.REACT_APP_API_BASE || '';
+import { resolveApiBase } from './apiBase';
+
+function apiBase() {
+  return resolveApiBase();
+}
 export const TOKEN_KEY = 'admin_token';
 const ROLE_KEY = 'admin_role';
 
@@ -29,7 +33,7 @@ function authHeaders() {
 }
 
 async function request(path, options = {}) {
-  const url = `${API_BASE}/api${path}`;
+  const url = `${apiBase()}/api${path}`;
   let res;
   try {
     res = await fetch(url, {
@@ -42,7 +46,7 @@ async function request(path, options = {}) {
     });
   } catch (err) {
     throw new Error(
-      `Cannot reach API at ${url}. Start the backend (port 3000) and confirm REACT_APP_API_BASE in frontend/.env.`
+      `Cannot reach API at ${url}. Ensure the backend is listening on port ${process.env.REACT_APP_API_PORT || '3000'} and set REACT_APP_API_BASE (or PUBLIC_API_URL in Docker) to your server URL, e.g. http://<ec2-ip>:3000.`
     );
   }
   if (res.status === 204) return null;

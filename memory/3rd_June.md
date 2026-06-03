@@ -175,4 +175,15 @@ MVP is suitable for stakeholder walkthrough when we clearly label mock integrati
 
 ---
 
+## MVP Acceptance Sprint (same day)
+
+- **Login UX:** Enterprise SaaS login (branding panel, feature highlights, role cards).
+- **EC2 API:** Runtime `apiBase.js` + `PUBLIC_API_URL` — no localhost from remote browsers.
+- **QA:** Browser E2E on `http://54.167.31.169:3001`; API script `scripts/api-validate.sh` (27/27 PASS).
+- **Bug fix:** Routing Demo default skill `mkt_campaign_brief` for workspace 2 agents.
+- **Reports:** `docs/api-validation-report.md`, `docs/mvp-acceptance-report.md`
+- **Verdict:** Stakeholder demo readiness **PASS** (see acceptance report).
+
+---
+
 *Generated during MVP Completion Sprint — June 3, 2026*

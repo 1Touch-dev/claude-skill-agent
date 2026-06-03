@@ -10,7 +10,7 @@ export default function RoutingDemo() {
     workspace_id: 2,
     title: 'MVP routing demo task',
     description: 'Demonstrate task intake and agent routing',
-    skill_key: 'cs_response_helper',
+    skill_key: 'mkt_campaign_brief',
     risk_tier: 1,
   });
 

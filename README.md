@@ -121,11 +121,12 @@ GET http://localhost:3000/health/live
 
 ```bash
 cp .env.example .env
+# On EC2: set PUBLIC_API_URL and PUBLIC_UI_URL to your instance public IP/DNS
 docker compose up --build
 ```
 
-- API: http://localhost:3000  
-- Admin UI: http://localhost:3001  
+- **Local:** API http://localhost:3000 — Admin UI http://localhost:3001  
+- **EC2 / remote:** open `http://<public-ip>:3001` — the UI calls `http://<public-ip>:3000` (set `PUBLIC_API_URL` in `.env` or rely on auto hostname detection). Ensure security group allows inbound **3000** and **3001**.
 
 ---
 
