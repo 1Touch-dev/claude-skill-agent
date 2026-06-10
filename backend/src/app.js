@@ -13,11 +13,17 @@ const runs = require('./routes/runs');
 const approvals = require('./routes/approvals');
 const integrations = require('./routes/integrations');
 const dashboard = require('./routes/dashboard');
+const pm = require('./routes/pm');
+const webhooks = require('./routes/webhooks');
 const { authenticateRequest, requireRole } = require('./middleware/auth');
 
 function buildApp() {
   const app = express();
   app.use(cors());
+
+  // Webhook receiver — raw body before express.json(), no auth
+  app.use('/webhooks', webhooks);
+
   app.use(express.json());
   app.use('/health', health);
   app.use('/api', authenticateRequest);
@@ -37,6 +43,7 @@ function buildApp() {
   app.use('/api', approvals);
   app.use('/api', integrations);
   app.use('/api', dashboard);
+  app.use('/api', pm);
   app.get('/', (_req, res) => res.json({ name: 'Enterprise Claude Skills API', status: 'ok' }));
   return app;
 }

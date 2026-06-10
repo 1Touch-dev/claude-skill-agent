@@ -1,0 +1,227 @@
+# Plane CE — Project Management layer
+# Start with: docker compose -f docker-compose-plane.yml up -d
+# Plane web UI:  http://54.167.31.169:8083
+# Plane API:     http://54.167.31.169:8083/api/v1/
+# Service names match what the Caddy proxy expects: api, web, space, admin
+
+x-app-env: &app-env
+  SECRET_KEY: ${PLANE_SECRET_KEY:-please-change-me-plane-secret-key-256}
+  DJANGO_SETTINGS_MODULE: plane.settings.production
+  DATABASE_URL: postgresql://plane:plane@plane-db:5432/plane
+  REDIS_URL: redis://plane-redis:6379/
+  CELERY_BROKER_URL: redis://plane-redis:6379/1
+  CELERY_RESULT_BACKEND: redis://plane-redis:6379/2
+  CORS_ALLOWED_ORIGINS: "http://54.167.31.169:3001,http://localhost:3001,http://54.167.31.169:8083,http://localhost:8083"
+  WEB_URL: http://54.167.31.169:8083
+  FILE_SIZE_LIMIT: "5242880"
+  BUCKET_NAME: uploads
+  AWS_REGION: ""
+  AWS_ACCESS_KEY_ID: access-key
+  AWS_SECRET_ACCESS_KEY: secret-key
+  AWS_S3_ENDPOINT_URL: http://plane-minio:9000
+  AWS_S3_BUCKET_NAME: uploads
+  USE_MINIO: "1"
+  DEBUG: "0"
+  DOCKERIZED: "1"
+  DEFAULT_EMAIL: ${PLANE_ADMIN_EMAIL:-admin@planepmsystem.local}
+  DEFAULT_PASSWORD: ${PLANE_ADMIN_PASSWORD:-Plane@Admin2026}
+  SIGNUP_DISABLED: "0"
+  EMAIL_BACKEND: "django.core.mail.backends.console.EmailBackend"
+  EMAIL_HOST: ""
+  EMAIL_PORT: "587"
+  EMAIL_HOST_USER: ""
+  EMAIL_HOST_PASSWORD: ""
+  EMAIL_USE_TLS: "1"
+  EMAIL_FROM: "noreply@planepmsystem.local"
+  ENABLE_MAGIC_LINK_LOGIN: "0"
+  ENABLE_EMAIL_PASSWORD: "1"
+  GOOGLE_CLIENT_ID: ""
+  GITHUB_CLIENT_ID: ""
+  GITHUB_CLIENT_SECRET: ""
+  GUNICORN_WORKERS: "2"
+  PORT: "8000"
+
+services:
+  plane-migrator:
+    image: makeplane/plane-backend:stable
+    restart: "no"
+    command: ./bin/docker-entrypoint-migrator.sh
+    environment:
+      <<: *app-env
+    depends_on:
+      plane-db:
+        condition: service_healthy
+    networks:
+      - plane-net
+
+  # Service named 'api' so Caddy can reach it as api:8000
+  api:
+    image: makeplane/plane-backend:stable
+    restart: unless-stopped
+    command: ./bin/docker-entrypoint-api.sh
+    environment:
+      <<: *app-env
+    depends_on:
+      plane-migrator:
+        condition: service_completed_successfully
+      plane-db:
+        condition: service_healthy
+      plane-redis:
+        condition: service_started
+      plane-minio:
+        condition: service_started
+    networks:
+      - plane-net
+    volumes:
+      - plane-logs:/app/logs
+
+  plane-worker:
+    image: makeplane/plane-backend:stable
+    restart: unless-stopped
+    command: ./bin/docker-entrypoint-worker.sh
+    environment:
+      <<: *app-env
+    depends_on:
+      - api
+    networks:
+      - plane-net
+    volumes:
+      - plane-logs:/app/logs
+
+  plane-beat-worker:
+    image: makeplane/plane-backend:stable
+    restart: unless-stopped
+    command: ./bin/docker-entrypoint-beat.sh
+    environment:
+      <<: *app-env
+    depends_on:
+      - api
+    networks:
+      - plane-net
+
+  # Service named 'web' so Caddy can reach it as web:3000
+  web:
+    image: makeplane/plane-frontend:stable
+    restart: unless-stopped
+    command: node web/server.js web
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://54.167.31.169:8083
+      NEXT_PUBLIC_ADMIN_BASE_URL: http://54.167.31.169:8083
+      NEXT_PUBLIC_ADMIN_BASE_PATH: /god-mode
+      NEXT_PUBLIC_SPACE_BASE_PATH: /spaces
+      NEXT_PUBLIC_DEPLOY_WITH_NGINX: "1"
+    depends_on:
+      - api
+    networks:
+      - plane-net
+
+  # Service named 'space' so Caddy can reach it as space:3000
+  space:
+    image: makeplane/plane-frontend:stable
+    restart: unless-stopped
+    command: node web/server.js space
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://54.167.31.169:8083
+      NEXT_PUBLIC_SPACE_BASE_PATH: /spaces
+      NEXT_PUBLIC_DEPLOY_WITH_NGINX: "1"
+    depends_on:
+      - api
+    networks:
+      - plane-net
+
+  # Service named 'admin' so Caddy can reach it as admin:3000
+  admin:
+    image: makeplane/plane-frontend:stable
+    restart: unless-stopped
+    command: node web/server.js admin
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://54.167.31.169:8083
+      NEXT_PUBLIC_ADMIN_BASE_URL: http://54.167.31.169:8083
+      NEXT_PUBLIC_ADMIN_BASE_PATH: /god-mode
+      NEXT_PUBLIC_DEPLOY_WITH_NGINX: "1"
+    depends_on:
+      - api
+    networks:
+      - plane-net
+
+  plane-proxy:
+    image: makeplane/plane-proxy:stable
+    restart: unless-stopped
+    ports:
+      - "8083:80"
+    environment:
+      FILE_SIZE_LIMIT: "5242880"
+      BUCKET_NAME: uploads
+      SITE_ADDRESS: ":80"
+      CERT_EMAIL: ""
+      TRUSTED_PROXIES: "0.0.0.0/0"
+    depends_on:
+      - web
+      - api
+      - space
+      - admin
+      - plane-minio
+    networks:
+      - plane-net
+
+  plane-db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: plane
+      POSTGRES_PASSWORD: plane
+      POSTGRES_DB: plane
+    volumes:
+      - plane-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U plane -d plane"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - plane-net
+
+  plane-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - plane-redis-data:/data
+    networks:
+      - plane-net
+
+  plane-minio:
+    image: minio/minio
+    restart: unless-stopped
+    command: server /data --console-address ":9090"
+    environment:
+      MINIO_ROOT_USER: access-key
+      MINIO_ROOT_PASSWORD: secret-key
+    volumes:
+      - plane-minio-data:/data
+    networks:
+      - plane-net
+
+  plane-minio-createbuckets:
+    image: minio/mc
+    depends_on:
+      - plane-minio
+    entrypoint: >
+      /bin/sh -c "
+        sleep 5;
+        /usr/bin/mc alias set minio http://plane-minio:9000 access-key secret-key;
+        /usr/bin/mc mb minio/uploads --ignore-existing;
+        /usr/bin/mc policy set download minio/uploads;
+        exit 0;
+      "
+    networks:
+      - plane-net
+
+networks:
+  plane-net:
+    driver: bridge
+
+volumes:
+  plane-pgdata:
+  plane-redis-data:
+  plane-minio-data:
+  plane-logs:

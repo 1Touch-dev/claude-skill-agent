@@ -1,5 +1,7 @@
 const express = require('express');
 const { pool } = require('../lib/db');
+const plane = require('../services/pm-bridge');
+
 const router = express.Router();
 const q = (t, p = []) => pool.query(t, p).then(r => r.rows);
 
@@ -41,7 +43,70 @@ router.post('/route/apply', async (req, res) => {
       [task_id, agent ? agent.id : null, skill_key, false]
     );
     await client.query('COMMIT');
-    res.status(201).json({ route: route.rows[0], run: run.rows[0] });
+
+    const routeRow = route.rows[0];
+    const runRow = run.rows[0];
+
+    // Auto-sync to Plane PM (fire-and-forget — does not block the response)
+    setImmediate(async () => {
+      try {
+        if (!plane.isEnabled() || !task_id) return;
+
+        // Ensure workspace has a Plane project
+        const wsRows = await q('SELECT id, name, plane_project_id FROM workspaces WHERE id=$1', [workspace_id]);
+        if (!wsRows.length) return;
+        const ws = wsRows[0];
+
+        let planeProjectId = ws.plane_project_id;
+        if (!planeProjectId) {
+          const identifier = `WS${String(workspace_id).padStart(4, '0')}`;
+          const cp = await plane.createProject({
+            name: ws.name || `Workspace ${workspace_id}`,
+            identifier,
+            description: `Control plane workspace ID ${workspace_id}. Auto-created by pm-bridge.`,
+          });
+          if (cp.ok) {
+            planeProjectId = cp.data.id;
+            await q('UPDATE workspaces SET plane_project_id=$1, plane_project_identifier=$2 WHERE id=$3',
+              [planeProjectId, identifier, workspace_id]);
+          }
+        }
+
+        if (!planeProjectId) return;
+
+        // Check if task already has a Plane issue
+        const taskRows = await q('SELECT * FROM task_intake WHERE id=$1', [task_id]);
+        if (!taskRows.length || taskRows[0].plane_issue_id) return;
+        const task = taskRows[0];
+
+        const priorityMap = { 0: 'low', 1: 'medium', 2: 'high', 3: 'urgent' };
+        const priority = priorityMap[Math.min(task.risk_tier || 0, 3)] || 'medium';
+
+        const issueResult = await plane.createWorkItem(planeProjectId, {
+          name: task.title,
+          description_html: `<p>${task.description || task.title}</p>`,
+          priority,
+          meta: {
+            control_plane_task_id: task_id,
+            workspace_id,
+            run_id: runRow.id,
+            skill_key: skill_key || null,
+            risk_tier: task.risk_tier,
+            routing_mode: task.routing_mode,
+          },
+        });
+
+        if (issueResult.ok) {
+          await q('UPDATE task_intake SET plane_issue_id=$1, plane_issue_sequence_id=$2 WHERE id=$3',
+            [issueResult.data.id, issueResult.data.sequence_id || null, task_id]);
+        }
+      } catch (syncErr) {
+        // Plane sync failure must never crash routing
+        console.error('[pm-bridge] auto-sync error:', syncErr.message);
+      }
+    });
+
+    res.status(201).json({ route: routeRow, run: runRow });
   } catch (e) {
     await client.query('ROLLBACK');
     res.status(500).json({ error: 'route_failed', details: String(e) });
