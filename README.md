@@ -2,8 +2,9 @@
 
 A multi-tenant **AI control plane** for governing Claude skills, agents, department suites, industry overlays, licensing, metering, approvals, audit, and integrations across enterprise workspaces.
 
-> **MVP status (June 2026):** Stakeholder-demo ready on branch `feature/mvp-completion-june-3`.  
-> See [docs/mvp-known-limitations.md](docs/mvp-known-limitations.md) for honest boundaries.
+> **Current branch:** `feature/plane-pm-integration` (June 2026)  
+> Adds **Plane CE** as an optional PM layer via `pm-bridge` — workspace/task sync + bidirectional webhooks.  
+> **Do not merge to `main` yet** — all Plane work stays on this branch until explicitly approved.
 
 ---
 
@@ -17,6 +18,7 @@ This is **not** a task manager or a prompt library. It is an enterprise **govern
 - Control access by **workspace**, **customer**, **entitlement**, and **risk tier**  
 - **Meter usage** through skill credits and subscription tiers  
 - Enforce **approvals**, **audit logging**, and **integration registry** workflows  
+- **(Plane branch)** Sync routed tasks to **Plane CE** work items and receive status updates via webhooks  
 
 **Live demo (EC2):**
 
@@ -24,7 +26,9 @@ This is **not** a task manager or a prompt library. It is an enterprise **govern
 |---------|-----|
 | Admin UI | http://54.167.31.169:3001 |
 | API | http://54.167.31.169:3000 |
-| Login | http://54.167.31.169:3001/login |
+| Plane CE (PM) | http://54.167.31.169:8083 |
+| Login (platform) | http://54.167.31.169:3001/login |
+| Login (Plane) | http://54.167.31.169:8083 — `admin@planepmsystem.local` |
 
 ---
 
@@ -36,9 +40,11 @@ flowchart LR
   API[Express API :3000]
   DB[(PostgreSQL)]
   RD[(Redis)]
+  PM[Plane CE :8083]
   UI --> API
   API --> DB
   API --> RD
+  API <-->|REST + webhooks| PM
 ```
 
 | Layer | Technology |
@@ -46,17 +52,20 @@ flowchart LR
 | Backend | Node.js, Express |
 | Frontend | React 17 (admin UI) |
 | Database | PostgreSQL 13 |
+| PM layer | Plane CE (Django + React), self-hosted |
 | Cache / Queue | Redis (workers planned) |
 | Deploy | Docker Compose |
 
-Detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+Detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Plane: [docs/plane-integration.md](docs/plane-integration.md)
 
 ---
 
-## Features (MVP)
+## Features
 
-| Module | Admin UI | API | MVP notes |
-|--------|----------|-----|-----------|
+### Control plane (MVP)
+
+| Module | Admin UI | API | Notes |
+|--------|----------|-----|-------|
 | Executive Dashboard | ✅ | ✅ | Live metrics from `/api/dashboard/summary` |
 | Skill Registry & Packages | ✅ | ✅ | Search, pagination |
 | Department Suites & Overlays | ✅ | ✅ | |
@@ -71,15 +80,17 @@ Detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 | Reports | ✅ | ✅ | Multiple report endpoints |
 | Auth | ✅ | ⚠️ | Bearer token + roles (not SSO) |
 
----
+### PM Bridge (`feature/plane-pm-integration`)
 
-## MVP Scope
+| Capability | Status |
+|--------------|--------|
+| Workspace → Plane project sync | ✅ |
+| Task → Plane work item sync (manual + auto on `route/apply`) | ✅ |
+| Plane webhook → `task_intake.status` update | ✅ Registered |
+| Graceful degradation if Plane not configured | ✅ 503, platform unaffected |
+| E2E test suite | ✅ 12/12 (`scripts/test-pm-integration.sh`) |
 
-**In scope:** Control-plane CRUD, live dashboard, MVP auth, approvals, integration registry + mock test, routing demo, reports, Docker on EC2, QA acceptance.
-
-**Out of scope:** SSO, production OAuth, webhooks, workers, RAG, full PM app, enterprise observability.
-
-Full list: [docs/mvp-known-limitations.md](docs/mvp-known-limitations.md)
+MVP boundaries: [docs/mvp-known-limitations.md](docs/mvp-known-limitations.md)
 
 ---
 
@@ -90,45 +101,55 @@ Full list: [docs/mvp-known-limitations.md](docs/mvp-known-limitations.md)
 - Node.js 18+ **or** Docker  
 - PostgreSQL 13+ (provided by Docker Compose)  
 
-### Docker setup (recommended for demo)
+### Docker setup (recommended)
 
 ```bash
 git clone https://github.com/1Touch-dev/claude-skill-agent.git
 cd claude-skill-agent
-git checkout feature/mvp-completion-june-3
+git checkout feature/plane-pm-integration
 cp .env.example .env
-# EC2: set PUBLIC_API_URL=http://<your-ip>:3000 and PUBLIC_UI_URL=http://<your-ip>:3001
+# EC2: set PUBLIC_API_URL, PUBLIC_UI_URL, and PLANE_* vars (see plane-integration.md)
 docker compose up -d --build
 ```
 
-- **Local:** http://localhost:3001 (UI), http://localhost:3000 (API)  
-- **EC2:** http://54.167.31.169:3001 — open security group ports **3000** and **3001**
+- **Platform local:** http://localhost:3001 (UI), http://localhost:3000 (API)  
+- **Plane local:** http://localhost:8083  
+- **EC2:** open security group ports **3000**, **3001**, and **8083**
+
+### Plane CE (optional PM layer)
+
+```bash
+# Create shared network once
+docker network create plane-net 2>/dev/null || true
+
+# Start Plane stack
+docker compose -f docker-compose-plane.yml up -d
+
+# Bootstrap admin, workspace, API token → copy into .env
+bash scripts/plane-setup.sh
+
+# Restart backend to pick up PLANE_* vars
+docker compose up -d --build backend
+
+# Verify integration
+bash scripts/test-pm-integration.sh http://localhost:3000
+```
+
+Full guide: [docs/plane-integration.md](docs/plane-integration.md)
 
 ### Keep running after you disconnect (EC2)
 
-The app runs **on the EC2 server**, not on your laptop. Closing Cursor or your laptop does **not** stop it.
-
-All services use `restart: unless-stopped` — they stay up across crashes and **auto-start after an EC2 reboot** (Docker is enabled on boot).
-
 ```bash
-# Deploy latest and leave it running
-git pull origin feature/mvp-completion-june-3
+git pull origin feature/plane-pm-integration
 docker compose up -d --build
+docker compose -f docker-compose-plane.yml up -d
 ```
 
-Verify anytime: `curl http://54.167.31.169:3000/health/live`
+Verify: `curl http://54.167.31.169:3000/health/live`
 
 ### Native setup
 
 See [docs/SETUP.md](docs/SETUP.md) for Postgres migrations and `npm run dev` / `npm start`.
-
-```bash
-cp .env.example .env
-cp frontend/.env.example frontend/.env
-cd backend && npm install && npm run migrate
-cd backend && npm run dev    # port 3000
-cd frontend && npm install && npm start   # port 3001
-```
 
 ---
 
@@ -136,9 +157,10 @@ cd frontend && npm install && npm start   # port 3001
 
 | Setting | Value |
 |---------|--------|
-| **Login URL** | http://54.167.31.169:3001/login |
-| **Token** | `changeme` (from `ADMIN_TOKEN` in `.env`) |
+| **Platform login** | http://54.167.31.169:3001/login |
+| **Platform token** | `changeme` (from `ADMIN_TOKEN` in `.env`) |
 | **Roles** | `admin`, `operator`, `viewer` |
+| **Plane admin** | `admin@planepmsystem.local` / see `PLANE_ADMIN_PASSWORD` in `.env` |
 
 **5-minute stakeholder script:** [docs/mvp-demo-script.md](docs/mvp-demo-script.md)  
 **Business user guide:** [docs/user-guide.md](docs/user-guide.md)
@@ -153,43 +175,37 @@ Prefix: `/api` (authenticated via `Authorization: Bearer <token>` and optional `
 |------|----------------|
 | Dashboard | `GET /dashboard/summary` |
 | Registry | `GET/POST/PUT/DELETE /skills`, `/packages` |
-| Suites | `GET/POST /suites`, `/overlays` |
 | Commercial | `GET/POST /customers`, `/workspaces`, `/entitlements`, `/credit-pools` |
-| Agents | `GET/POST /agents` |
-| Runs | `GET/POST /runs`, `GET /runs/:id/audit` |
+| Agents & Runs | `GET/POST /agents`, `/runs`, `GET /runs/:id/audit` |
 | Approvals | `GET /approvals`, `POST /approvals/:id/decide` |
 | Integrations | `GET/POST/PUT/DELETE /integrations`, `POST /integrations/:id/test` |
 | Routing | `GET/POST /tasks`, `POST /route`, `POST /route/apply` |
-| Reports | `GET /reports/*` |
+| **PM Bridge** | `POST /pm/ping`, `POST /pm/workspaces/:id/sync`, `POST /pm/tasks/:id/sync` |
+| Webhooks | `POST /webhooks/plane` (Plane → us, no Bearer auth) |
 | Health | `GET /health/live`, `GET /health/ready` |
 
-Full validation: [docs/api-validation-report.md](docs/api-validation-report.md)
+Full validation: [docs/api-validation-report.md](docs/api-validation-report.md) · PM detail: [docs/plane-integration.md](docs/plane-integration.md)
 
 ---
 
 ## Documentation
 
-### Start here (stakeholder / new team member)
+### Start here
 
 | Document | Purpose |
 |----------|---------|
-| **[docs/user-guide.md](docs/user-guide.md)** | Non-technical guide + 5-minute example walkthrough |
-| **[docs/mvp-demo-script.md](docs/mvp-demo-script.md)** | 5-minute executive demo script |
-| **[docs/mvp-known-limitations.md](docs/mvp-known-limitations.md)** | Honest MVP boundaries |
-
-### QA and acceptance
-
-| Document | Purpose |
-|----------|---------|
-| [docs/mvp-acceptance-report.md](docs/mvp-acceptance-report.md) | MVP acceptance verdict |
-| [docs/api-validation-report.md](docs/api-validation-report.md) | API endpoint matrix |
-| [docs/live-browser-test-report.md](docs/live-browser-test-report.md) | Live Cursor browser proof |
+| [docs/user-guide.md](docs/user-guide.md) | Non-technical guide |
+| [docs/mvp-demo-script.md](docs/mvp-demo-script.md) | 5-minute executive demo |
+| [docs/plane-integration.md](docs/plane-integration.md) | **Plane CE pm-bridge** — setup, API, webhooks |
+| [docs/pm-platform-feasibility-study.md](docs/pm-platform-feasibility-study.md) | Worksuite vs Taskly vs Plane decision |
+| [docs/mvp-known-limitations.md](docs/mvp-known-limitations.md) | Honest MVP boundaries |
 
 ### Sprint history
 
 | Document | Purpose |
 |----------|---------|
-| [memory/3rd_June.md](memory/3rd_June.md) | MVP completion sprint log |
+| [memory/10th_June.md](memory/10th_June.md) | **Plane PM integration** — spike, tests, webhook |
+| [memory/3rd_June.md](memory/3rd_June.md) | MVP completion sprint |
 | [memory/2nd_June.md](memory/2nd_June.md) | Full requirements / completion plan |
 
 ### Technical reference
@@ -197,8 +213,7 @@ Full validation: [docs/api-validation-report.md](docs/api-validation-report.md)
 | Document | Purpose |
 |----------|---------|
 | [docs/SETUP.md](docs/SETUP.md) | Install and run |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design |
-| [docs/HANDBOOK_GAP_ANALYSIS.md](docs/HANDBOOK_GAP_ANALYSIS.md) | Requirements vs build |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design + PM layer |
 | [docs/OPERATIONS.md](docs/OPERATIONS.md) | Operations notes |
 
 ---
@@ -207,13 +222,19 @@ Full validation: [docs/api-validation-report.md](docs/api-validation-report.md)
 
 ```
 claude-skill-agent/
-├── backend/           # Express API, migrations, tests
-├── frontend/          # React admin UI
-├── docs/              # User guide, demo script, QA reports
-├── memory/            # Sprint logs and progress
-├── scripts/           # api-validate.sh
-├── docker-compose.yml
-└── .env.example
+├── backend/
+│   ├── src/services/pm-bridge/   # Plane REST client
+│   ├── src/routes/pm.js          # /api/pm/*
+│   ├── src/routes/webhooks.js    # /webhooks/plane
+│   └── db/migrations/0009_pm_bridge.sql
+├── frontend/                     # React admin UI
+├── docs/                         # Guides, feasibility study, plane-integration
+├── memory/                       # Sprint logs (10th_June.md = Plane spike)
+├── scripts/
+│   ├── plane-setup.sh            # Bootstrap Plane CE
+│   └── test-pm-integration.sh    # 12-test e2e suite
+├── docker-compose.yml            # Platform stack (+ plane-net)
+└── docker-compose-plane.yml      # Plane CE stack
 ```
 
 ---
@@ -223,7 +244,17 @@ claude-skill-agent/
 ```bash
 cd backend && npm test
 ./scripts/api-validate.sh
+bash scripts/test-pm-integration.sh http://localhost:3000   # requires Plane + backend
 ```
+
+---
+
+## Branch policy
+
+| Branch | Purpose |
+|--------|---------|
+| `main` | Stable MVP baseline — **no Plane merge until approved** |
+| `feature/plane-pm-integration` | **Active** — Plane CE pm-bridge, docs, tests |
 
 ---
 
@@ -232,6 +263,9 @@ cd backend && npm test
 ```bash
 curl http://54.167.31.169:3000/health/live
 # → {"status":"ok","live":true}
+
+curl -X POST http://54.167.31.169:3000/api/pm/ping -H "Authorization: Bearer changeme"
+# → {"ok":true,"plane_enabled":true,...}  (when Plane configured)
 ```
 
 ---

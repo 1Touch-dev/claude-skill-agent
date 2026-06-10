@@ -1,10 +1,12 @@
 # MVP Known Limitations
 
-**Branch:** `feature/mvp-completion-june-3`  
+**Branch:** `feature/plane-pm-integration` (extends MVP; **not merged to `main`**)  
 **Audience:** Stakeholders, product, engineering  
 **Purpose:** Honest boundaries for what the MVP does **not** do yet  
 
 This document prevents over-promising during demos and sets clear roadmap expectations.
+
+> **June 10 update:** Branch `feature/plane-pm-integration` adds an optional **Plane CE pm-bridge** (workspace/task sync + webhooks). That is a **spike/integration layer**, not a full in-platform PM product. See [plane-integration.md](plane-integration.md).
 
 ---
 
@@ -69,9 +71,11 @@ The following are **planned** capabilities — **not** available in the current 
 
 | Item | Status |
 |------|--------|
-| **Full PM layer** (projects, epics, comments, files, dependencies) | Not implemented |
+| **Plane CE pm-bridge** (sync + webhooks) | ✅ On `feature/plane-pm-integration` only |
+| **PM status in admin UI** | Not implemented — API/DB fields exist |
+| **Full PM layer in-platform** (no external tool) | Not implemented — Plane is external |
 | **End-user delivery application** | Not implemented |
-| **Notifications and automations** | Not implemented |
+| **Plane GitHub / Slack native integrations** | Not configured yet |
 
 ### Security and compliance (production-grade)
 
@@ -100,7 +104,8 @@ The following are **planned** capabilities — **not** available in the current 
 3. **Routing:** Rule-based agent pick — not a full autonomous orchestrator with queues.  
 4. **Approvals:** Workflow is approve/reject on a record — not multi-step SLA escalation.  
 5. **Reports:** Data is real from DB but not full BI/charting/export suite.  
-6. **Deployment:** EC2 demo requires security group ports **3000** and **3001** open.  
+6. **Deployment:** EC2 demo requires security group ports **3000**, **3001**, and **8083** (Plane) open.  
+7. **PM (Plane branch):** Tasks sync to Plane as work items; PM UI is a **separate app** at `:8083`, not embedded in the admin UI yet.  
 
 ---
 
@@ -113,7 +118,7 @@ The following are **planned** capabilities — **not** available in the current 
 | Integrations | ✅ Registry + mock test | ✅ OAuth + webhooks + sync |
 | Auth | ⚠️ Token only | ✅ SSO + RBAC |
 | Orchestration | ⚠️ Routing demo | ✅ Workers + SLA |
-| PM / RAG | ❌ | ✅ |
+| PM / RAG | ⚠️ Plane bridge on feature branch | ✅ Full in-platform or embedded |
 
 Estimate from sprint planning: **~75% MVP demo readiness**; **~35–40%** of full enterprise requirements document coverage.
 
@@ -126,7 +131,9 @@ Estimate from sprint planning: **~75% MVP demo readiness**; **~35–40%** of ful
 - [mvp-acceptance-report.md](mvp-acceptance-report.md) — QA evidence  
 - [api-validation-report.md](api-validation-report.md) — endpoint validation  
 - [live-browser-test-report.md](live-browser-test-report.md) — live browser proof  
-- [memory/3rd_June.md](../memory/3rd_June.md) — sprint history and status  
+- [memory/3rd_June.md](../memory/3rd_June.md) — MVP sprint history  
+- [memory/10th_June.md](../memory/10th_June.md) — Plane PM integration spike  
+- [plane-integration.md](plane-integration.md) — pm-bridge setup and API  
 
 ---
 

@@ -1,8 +1,9 @@
 # Plane CE Integration — PM Bridge
 
-**Status:** Spike complete — code implemented, tests passing  
-**Branch:** `feature/plane-pm-integration`  
-**Date:** June 10, 2026
+**Status:** Complete — bidirectional sync live, webhook registered, 12/12 tests passing  
+**Branch:** `feature/plane-pm-integration` (not merged to `main`)  
+**Date:** June 10, 2026  
+**GitHub:** https://github.com/1Touch-dev/claude-skill-agent/tree/feature/plane-pm-integration
 
 ---
 
@@ -39,7 +40,7 @@ backend/db/migrations/
 docker-compose-plane.yml   Plane CE Docker stack (port 8083)
 scripts/
   plane-setup.sh      Bootstrap Plane and print .env values
-  test-pm-integration.sh  E2E test suite (11/12 passing)
+  test-pm-integration.sh  E2E test suite (12/12 passing)
 docs/
   plane-integration.md  (this file)
 ```
@@ -67,10 +68,11 @@ The script will:
 ### 2. Configure `.env`
 
 ```env
-PLANE_API_URL=http://54.167.31.169:8083
+# Internal Docker URL (backend is on plane-net)
+PLANE_API_URL=http://plane-proxy:80
 PLANE_API_TOKEN=<token from setup script>
 PLANE_WORKSPACE_SLUG=claude-skills
-PLANE_WEBHOOK_SECRET=<optional — set in Plane Settings → Webhooks>
+PLANE_WEBHOOK_SECRET=<from Plane Settings → Webhooks after registration>
 ```
 
 ### 3. Restart backend
@@ -136,8 +138,9 @@ This runs **fire-and-forget** (`setImmediate`) so routing latency is unaffected 
 
 ## Webhook Flow
 
-Register in Plane:
-**Settings → Webhooks → URL:** `http://54.167.31.169:3000/webhooks/plane`
+Registered in Plane (June 10, 2026):
+**Settings → Webhooks → URL:** `http://54.167.31.169:3000/webhooks/plane`  
+Events: **Work items** only (created, updated, deleted). Secret stored in `.env` as `PLANE_WEBHOOK_SECRET`.
 
 Events handled:
 
@@ -186,7 +189,7 @@ plane_webhook_events (
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `PLANE_API_URL` | Yes | Base URL e.g. `http://54.167.31.169:8083` |
+| `PLANE_API_URL` | Yes | Docker: `http://plane-proxy:80`; external UI: `http://<host>:8083` |
 | `PLANE_API_TOKEN` | Yes | API token from Plane Settings |
 | `PLANE_WORKSPACE_SLUG` | Yes | Workspace slug from Plane |
 | `PLANE_WEBHOOK_SECRET` | No | HMAC secret for webhook verification |
@@ -204,17 +207,20 @@ If `PLANE_API_TOKEN` or `PLANE_WORKSPACE_SLUG` is empty, all pm-bridge calls ret
 | Plane API | `:8083/api/v1/` | REST API |
 | MinIO console | `:9090` (internal) | File storage |
 | Plane Postgres | internal | Separate from our Postgres |
-| Plane Redis | internal | Separate from our Redis |
+| Plane Redis | internal | Cache |
+| Plane RabbitMQ (`plane-mq`) | internal | Celery broker (required) |
 
 ---
 
 ## Production Checklist
 
+- [x] Webhook registered in Plane UI (work items → `/webhooks/plane`)
+- [x] `PLANE_WEBHOOK_SECRET` set in `.env` on server
 - [ ] Change `PLANE_SECRET_KEY` in `.env` / `docker-compose-plane.yml`
 - [ ] Change default admin password (`PLANE_ADMIN_PASSWORD`)
-- [ ] Set `PLANE_WEBHOOK_SECRET` and configure in Plane Settings
 - [ ] Add IP/token authentication on `/webhooks/plane`
 - [ ] Set up Plane GitHub + Slack integrations via Plane Settings
+- [ ] Frontend: PM Status column in Tasks UI
 - [ ] Consider Nginx reverse proxy to unify domains
 - [ ] Add Plane services to backup rotation
 
@@ -226,14 +232,14 @@ If `PLANE_API_TOKEN` or `PLANE_WORKSPACE_SLUG` is empty, all pm-bridge calls ret
 # With Plane running (all 12 tests pass)
 bash scripts/test-pm-integration.sh http://localhost:3000
 
-# Without Plane (11/12 pass, 1 skipped — expected)
+# Without Plane configured — T02/T03 may fail; platform health still passes
 ADMIN_TOKEN=changeme bash scripts/test-pm-integration.sh http://localhost:3000
 ```
 
 Test coverage:
 - T01: API health
-- T02: Plane ping (skip if not configured)
-- T03: Graceful 503 when Plane not configured
+- T02: Plane ping
+- T03: Plane projects list
 - T04: Workspace seeding
 - T05: Workspace PM status endpoint
 - T06: Workspace → Plane project sync

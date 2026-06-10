@@ -4,3 +4,5 @@ frontend/.env
 frontend/build/
 *.log
 .DS_Store
+Worksuite SaaS Project Management.zip
+*.zip
