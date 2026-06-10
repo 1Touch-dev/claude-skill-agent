@@ -69,6 +69,17 @@ router.post('/route/apply', async (req, res) => {
             planeProjectId = cp.data.id;
             await q('UPDATE workspaces SET plane_project_id=$1, plane_project_identifier=$2 WHERE id=$3',
               [planeProjectId, identifier, workspace_id]);
+          } else if (cp.status === 409) {
+            // Project already exists — look it up
+            const list = await plane.listProjects();
+            if (list.ok) {
+              const existing = (list.data.results || list.data || []).find(p => p.identifier === identifier);
+              if (existing) {
+                planeProjectId = existing.id;
+                await q('UPDATE workspaces SET plane_project_id=$1, plane_project_identifier=$2 WHERE id=$3',
+                  [planeProjectId, identifier, workspace_id]);
+              }
+            }
           }
         }
 

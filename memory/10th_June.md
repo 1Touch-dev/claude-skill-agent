@@ -1,8 +1,8 @@
 # Enterprise Claude Skills Platform — June 10, 2026
 
-**Last updated:** June 10, 2026 (spike COMPLETE)  
+**Last updated:** June 10, 2026 (webhook REGISTERED — fully bidirectional)  
 **Branch:** `feature/plane-pm-integration`  
-**Status:** ✅ PM Bridge spike DONE — 12/12 tests passing, Plane CE running, Work Items syncing
+**Status:** ✅ PM Bridge spike + Webhook DONE — 12/12 tests passing, Plane CE UI working, bidirectional sync LIVE
 
 ---
 
@@ -64,7 +64,7 @@ Results: 12/12 passed | 0 failed | 0 skipped
 Plane is running on `:8083`. Verified via Django shell:
 - **1 Project created:** "Globex Main" (identifier: WS0002, id: 09661038)
 - **1 Work Item synced:** "[PM-Bridge Test] E2E Spike Task" (priority: medium)
-- API Token: `plane_api_7c8c15e06f304a7d91079c68e83538fa` (workspace: `claude-skills`)
+- API Token: `plane_api_4228e7e3dd3648b5b7a94b9d2258562c` (workspace: `claude-skills`)
 - API URL: `http://plane-proxy:80` (internal Docker; `http://54.167.31.169:8083` externally)
 
 ---
@@ -167,9 +167,42 @@ The 2-week integration spike completed same day. Key results:
 
 ---
 
+## Plane UI & Webhook — June 10 (Evening)
+
+### Infrastructure fixes required (from browser test session):
+- **Docker frontend images**: `plane-space:stable` and `plane-admin:stable` are separate images (not all-in-one)
+- **Broker**: Plane CE uses **RabbitMQ** (`plane-mq:5672`) for Celery, not Redis — rewired `docker-compose-plane.yml`
+- **live service**: Added `makeplane/plane-live:stable` (collaborative editing)
+- **WEB_URL**: Must be `http://localhost:8083` for UI to work in same-host browser
+- **409 conflict handling**: pm.js + routing.js now handle project-name-already-exists gracefully
+
+### Webhook Registration (via browser, June 10):
+- Logged into Plane UI at `http://localhost:8083`
+- Workspace: Claude Skills Platform (`claude-skills`)  
+- Settings → Webhooks → Add Webhook
+- URL: `http://54.167.31.169:3000/webhooks/plane`
+- Events: Work items only (created, updated, deleted)
+- **Webhook secret**: `plane_wh_0c484195c9f44a7496a6a8e3f6509176` (saved to `.env` as `PLANE_WEBHOOK_SECRET`)
+- Status: **ACTIVE** (blue toggle visible in Plane UI)
+
+### Final test results after webhook registration:
+```
+Results: 12/12 passed | 0 failed | 0 skipped
+```
+
+### Bidirectional sync is now LIVE:
+```
+[Task created] → route/apply → Plane Work Item created (auto-sync)
+[Plane Work Item updated] → Webhook → task_intake.status updated
+```
+
+---
+
 ## Upcoming
 
-- Register webhook in Plane UI: Settings → Webhooks → `http://54.167.31.169:3000/webhooks/plane`
-- Sprint 2: Live GitHub connector (next after Plane webhook registered)
+- ~~Register webhook in Plane UI~~ ✅ DONE
+- Sprint 2: Live GitHub connector (Plane → GitHub Issues sync)
 - Frontend: PM Status column in Tasks view (shows plane_issue_id + sync status)
+- Set up Plane native Slack integration
+- Map agent profiles to Plane workspace members
 - SSO groundwork (deferred from MVP)

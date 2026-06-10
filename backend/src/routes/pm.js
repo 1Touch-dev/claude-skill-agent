@@ -90,6 +90,26 @@ router.post('/pm/workspaces/:id/sync', async (req, res) => {
     network: 'secret',
   });
 
+  // 409 = project name already taken — find it by identifier instead
+  if (!result.ok && result.status === 409) {
+    const listResult = await plane.listProjects();
+    if (listResult.ok) {
+      const existing = (listResult.data.results || listResult.data || [])
+        .find(p => p.identifier === identifier);
+      if (existing) {
+        await q('UPDATE workspaces SET plane_project_id=$1, plane_project_identifier=$2 WHERE id=$3',
+          [existing.id, identifier, workspaceId]);
+        return res.json({
+          synced: true,
+          already_existed: true,
+          plane_project_id: existing.id,
+          plane_project: existing,
+        });
+      }
+    }
+    return res.status(409).json({ error: 'plane_project_name_conflict', details: result.error });
+  }
+
   if (!result.ok) {
     return res.status(502).json({ error: 'plane_project_create_failed', details: result.error, plane_status: result.status });
   }
