@@ -154,9 +154,25 @@ Our platform (governance)          Plane CE (PM layer)
 
 ---
 
+## E2E test run (Jun 11 afternoon)
+
+Full regression after P0 completion — **all green, no bugs found:**
+
+| Suite | Result |
+|-------|--------|
+| `scripts/test-pm-integration.sh` | 12/12 passed |
+| Backend `npm test` | 7 suites, 10/10 passed |
+| `scripts/status.sh` | 4/4 HTTP checks green |
+| Cursor browser E2E | Tasks, Routing, Dashboard, Agents, Integrations, Reports — all PASS |
+
+Report: [docs/live-browser-test-report-jun11.md](../docs/live-browser-test-report-jun11.md)
+
+---
+
 ## Related docs
 
 - [10th_June.md](10th_June.md) — spike build log  
-- [docs/runbook.md](../docs/runbook.md) — **operational runbook** ← new  
+- [docs/runbook.md](../docs/runbook.md) — operational runbook  
+- [docs/live-browser-test-report-jun11.md](../docs/live-browser-test-report-jun11.md) — E2E test report  
 - [docs/plane-integration.md](../docs/plane-integration.md) — technical reference  
 - [docs/pm-platform-feasibility-study.md](../docs/pm-platform-feasibility-study.md) — option analysis  
