@@ -24,31 +24,32 @@ This document records the firewall posture of the demo EC2 instance, identifies 
 
 | Rule ID | Port | Protocol | Source | Status | Required Action |
 |---------|------|----------|--------|--------|-----------------|
-| `sgr-0d994a19ed959b581` | **6379** | TCP | 0.0.0.0/0 | 🔴 **DELETE** | Redis open to internet — remove immediately |
-| `sgr-0d1258741902daed1` | **5432** | TCP | 0.0.0.0/0 | 🔴 **DELETE** | PostgreSQL open to internet — remove immediately |
-| *(missing)* | **8083** | TCP | 0.0.0.0/0 | 🔴 **ADD** | Plane CE — not in SG; currently only localhost-accessible |
+| Rule ID | Port | Protocol | Source | Status | Notes |
+|---------|------|----------|--------|--------|-------|
+| ~~`sgr-0d994a19ed959b581`~~ | ~~6379~~ | ~~TCP~~ | ~~0.0.0.0/0~~ | ✅ **Deleted Jun 11** | Redis — removed |
+| ~~`sgr-0d1258741902daed1`~~ | ~~5432~~ | ~~TCP~~ | ~~0.0.0.0/0~~ | ✅ **Deleted Jun 11** | PostgreSQL — removed |
+| *(new)* | **8083** | TCP | 0.0.0.0/0 | ✅ **Added Jun 11** | Plane CE — now externally accessible |
 | `sgr-002eac07aba0dd577` | 22 | TCP | 0.0.0.0/0 | ⚠️ Restrict | SSH — change source to office/VPN IP when convenient |
 | `sgr-009b94fb15a45fe45` | 80 | TCP | 0.0.0.0/0 | ℹ️ Harmless | HTTP — not in active use; can keep (reserved for future TLS proxy) |
 | `sgr-090d5542703b446d5` | 443 | TCP | 0.0.0.0/0 | ℹ️ Harmless | HTTPS — not in active use; reserved for future TLS |
 | `sgr-0a955b142d68b158c` | 3000 | TCP | 0.0.0.0/0 | ✅ Required | Platform API + Plane webhook receiver |
 | `sgr-0bd45d2d9861e2e82` | 3001 | TCP | 0.0.0.0/0 | ✅ Required | Admin UI |
 
-> **Critical gap:** Port **8083** (Plane CE) is **not in the security group**. Plane is unreachable from the internet — James cannot access the Plane PM board from outside. Add this rule.
+> **Applied June 11:** Rules for 5432 and 6379 deleted; port 8083 added. All three services verified reachable/blocked.
 
 ---
 
-## 3. Required SG Changes
+## 3. SG Changes Applied — June 11, 2026
 
-### Via AWS Console (simplest)
+Changes have been applied via AWS Console. Verified by port connectivity test from EC2.
 
-1. Open **EC2 → Security Groups → `sg-0106b45e7552109a0`**
-2. Click **Edit inbound rules**
-3. **Delete** the row for port **6379** (Redis)
-4. **Delete** the row for port **5432** (PostgreSQL)
-5. **Add rule**: Custom TCP · port **8083** · source `0.0.0.0/0` · description `Plane CE UI`
-6. Click **Save rules**
+| Action | Port | Result |
+|--------|------|--------|
+| Deleted rule `sgr-0d994a19ed959b581` | 6379 (Redis) | ✅ Now blocked — `timeout 4 bash -c 'echo > /dev/tcp/54.167.31.169/6379'` → BLOCKED |
+| Deleted rule `sgr-0d1258741902daed1` | 5432 (PostgreSQL) | ✅ Now blocked — same test → BLOCKED |
+| Added new rule | 8083 (Plane CE) | ✅ Now reachable — `curl http://54.167.31.169:8083` → HTTP 200 |
 
-### Via AWS CLI (from a machine with credentials)
+**If SG changes are ever needed again**, use the CLI commands below (requires AWS credentials):
 
 ```bash
 SG="sg-0106b45e7552109a0"
@@ -161,11 +162,11 @@ Exit code `0` = clean. Exit code `1` = critical issues found.
 
 | # | Action | Priority | Status |
 |---|--------|----------|--------|
-| 1 | **Delete 5432 from SG** (`sgr-0d1258741902daed1`) | 🔴 Immediate | ⏳ Pending (AWS Console/CLI) |
-| 2 | **Delete 6379 from SG** (`sgr-0d994a19ed959b581`) | 🔴 Immediate | ⏳ Pending (AWS Console/CLI) |
-| 3 | **Add 8083 to SG** (Plane CE) | 🔴 Immediate | ⏳ Pending (AWS Console/CLI) |
+| 1 | **Delete 5432 from SG** (`sgr-0d1258741902daed1`) | 🔴 Immediate | ✅ Done Jun 11 |
+| 2 | **Delete 6379 from SG** (`sgr-0d994a19ed959b581`) | 🔴 Immediate | ✅ Done Jun 11 |
+| 3 | **Add 8083 to SG** (Plane CE) | 🔴 Immediate | ✅ Done Jun 11 |
 | 4 | **Remove postgres/redis host port bindings** in `docker-compose.yml` | 🟠 High | P2 follow-up |
-| 5 | **Restrict SSH (22)** to office/VPN IP | 🟠 High | ⏳ Optional now |
+| 5 | **Restrict SSH (22)** to office/VPN IP | 🟠 High | ⏳ Optional — update when office IP known |
 | 6 | **Enable `ufw`** as defence-in-depth | 🟡 Medium | P2 follow-up |
 | 7 | **Set `PLANE_WEBHOOK_ALLOWED_IPS`** in `.env` | 🟡 Medium | ✅ Implemented (P1-9) |
 | 8 | **HTTPS** with domain / reverse proxy | 🟡 Medium | P2 follow-up |

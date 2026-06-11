@@ -90,15 +90,14 @@ Plane work item URL: `http://54.167.31.169:8083/claude-skills/projects/WS0002/is
 
 ### P1-10 delivered (Jun 11)
 - **Audited:** instance `i-007f63e3c802844fe`, region `us-east-1c`, SG `sg-0106b45e7552109a0` (`launch-wizard-60`)
-- **Confirmed SG findings (AWS Console):**
-  - 🔴 CRITICAL: Port **6379 (Redis)** open to `0.0.0.0/0` — rule `sgr-0d994a19ed959b581` — **DELETE**
-  - 🔴 CRITICAL: Port **5432 (PostgreSQL)** open to `0.0.0.0/0` — rule `sgr-0d1258741902daed1` — **DELETE**
-  - 🔴 CRITICAL: Port **8083 (Plane CE)** **missing** from SG — Plane not externally reachable — **ADD**
-  - 🟡 WARN: SSH (22) open to `0.0.0.0/0` — restrict to office IP when convenient
-  - ✅ OK: Ports 3000, 3001 in SG correctly; ports 80, 443 present but unused (harmless)
+- **Confirmed SG findings + applied (AWS Console):**
+  - ✅ Deleted rule `sgr-0d994a19ed959b581` — port 6379 (Redis) was open to `0.0.0.0/0` — **now blocked**
+  - ✅ Deleted rule `sgr-0d1258741902daed1` — port 5432 (PostgreSQL) was open to `0.0.0.0/0` — **now blocked**
+  - ✅ Added port 8083 (Plane CE) — was missing from SG — **now externally reachable**
+  - ⚠️ SSH (22) still open to `0.0.0.0/0` — restrict to office IP when convenient
+- **Verified post-change:** ports 5432 + 6379 timeout from EC2; port 8083 returns HTTP 200; 12/12 tests still pass
 - **Docs/tools created:** `docs/ec2-security.md`, `scripts/audit-ec2-security.sh`
 - **Updated:** README.md, docs/runbook.md (Security §8), docs/SETUP.md, docs/plane-integration.md, docs/mvp-known-limitations.md
-- **Action required (ops):** Log into AWS Console → EC2 → Security Groups → edit `sg-0106b45e7552109a0`: delete 5432 + 6379 rules, add 8083 rule
 
 ### P1-8 delivered (Jun 11)
 - DB migration `0010_agent_plane_mapping.sql` — adds `plane_member_id`, `plane_member_email` to `agent_profiles`
