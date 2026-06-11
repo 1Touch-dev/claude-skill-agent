@@ -85,6 +85,9 @@ The following are **planned** capabilities — **not** available in the current 
 | **Full policy engine** | Not implemented |
 | **Enterprise compliance exports** | Not implemented |
 | **SOC2 evidence automation** | Not implemented |
+| **EC2 security group audit** | ✅ Audited Jun 11 — see `docs/ec2-security.md` |
+| **Webhook IP allowlist** | ✅ `PLANE_WEBHOOK_ALLOWED_IPS` (P1-9) |
+| **5432/6379 SG closure** | ⚠️ Host binding exists — SG inspection requires AWS credentials; see `docs/ec2-security.md` |
 
 ### Observability and operations
 
@@ -104,7 +107,7 @@ The following are **planned** capabilities — **not** available in the current 
 3. **Routing:** Rule-based agent pick — not a full autonomous orchestrator with queues.  
 4. **Approvals:** Workflow is approve/reject on a record — not multi-step SLA escalation.  
 5. **Reports:** Data is real from DB but not full BI/charting/export suite.  
-6. **Deployment:** EC2 demo requires security group ports **3000**, **3001**, and **8083** (Plane) open.  
+6. **Deployment:** EC2 demo requires security group ports **3000**, **3001**, and **8083** (Plane) open. Ports **5432** and **6379** must NOT be open to `0.0.0.0/0` — see `docs/ec2-security.md`.  
 7. **PM (Plane branch):** Tasks sync to Plane as work items; PM UI is a **separate app** at `:8083`, not embedded in the admin UI yet.  
 
 ---

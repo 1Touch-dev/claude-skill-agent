@@ -216,13 +216,15 @@ If `PLANE_API_TOKEN` or `PLANE_WORKSPACE_SLUG` is empty, all pm-bridge calls ret
 
 - [x] Webhook registered in Plane UI (work items → `/webhooks/plane`)
 - [x] `PLANE_WEBHOOK_SECRET` set in `.env` on server
+- [x] `PLANE_WEBHOOK_ALLOWED_IPS` configured for IP allowlist (P1-9) — see `docs/runbook.md`
 - [ ] Change `PLANE_SECRET_KEY` in `.env` / `docker-compose-plane.yml`
 - [ ] Change default admin password (`PLANE_ADMIN_PASSWORD`)
-- [ ] Add IP/token authentication on `/webhooks/plane`
+- [x] IP allowlist on `/webhooks/plane` via `PLANE_WEBHOOK_ALLOWED_IPS` (P1-9)
 - [ ] Set up Plane GitHub + Slack integrations via Plane Settings
-- [ ] Frontend: PM Status column in Tasks UI
 - [ ] Consider Nginx reverse proxy to unify domains
 - [ ] Add Plane services to backup rotation
+
+**Webhook note:** Plane posts events to `http://<your-host>:3000/webhooks/plane`. Port `:3000` must remain publicly reachable. Harden with `PLANE_WEBHOOK_ALLOWED_IPS` and `PLANE_WEBHOOK_SECRET`. See `docs/ec2-security.md` for the full port/SG matrix.
 
 ---
 

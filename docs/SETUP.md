@@ -73,3 +73,8 @@ Full reference: [plane-integration.md](plane-integration.md)
 ## EC2 ports
 
 Open inbound: **3000** (API), **3001** (UI), **8083** (Plane UI/API proxy).
+
+**Do not open:** 5432 (PostgreSQL) or 6379 (Redis) to `0.0.0.0/0` — these must remain inaccessible from the internet.
+
+Full security audit: [ec2-security.md](ec2-security.md)  
+Re-run audit: `bash scripts/audit-ec2-security.sh`

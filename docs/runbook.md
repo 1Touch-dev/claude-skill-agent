@@ -289,7 +289,40 @@ bash scripts/start.sh
 
 ---
 
-## 8. Architecture Summary
+## 8. Security
+
+### EC2 firewall posture
+
+Full audit: **[docs/ec2-security.md](ec2-security.md)**
+
+Quick summary:
+
+| Port | Service | Status |
+|------|---------|--------|
+| 3001 | Admin UI | ✅ Must be open |
+| 3000 | API + webhooks | ✅ Must be open (Plane webhook posts here) |
+| 8083 | Plane CE | ✅ Must be open |
+| 22 | SSH | ⚠️ Restrict to known IPs |
+| 5432 | PostgreSQL | ❌ Must NOT be open to 0.0.0.0/0 |
+| 6379 | Redis | ❌ Must NOT be open to 0.0.0.0/0 |
+
+**Re-run audit:**
+```bash
+bash scripts/audit-ec2-security.sh
+```
+
+**Remove dangerous SG rules (from a machine with AWS credentials):**
+```bash
+aws ec2 revoke-security-group-ingress \
+  --group-id sg-0106b45e7552109a0 --protocol tcp --port 5432 --cidr 0.0.0.0/0
+
+aws ec2 revoke-security-group-ingress \
+  --group-id sg-0106b45e7552109a0 --protocol tcp --port 6379 --cidr 0.0.0.0/0
+```
+
+---
+
+## 9. Architecture Summary
 
 ```
 Our platform (governance)         Plane CE (PM layer)
@@ -306,7 +339,7 @@ If Plane is down, the platform continues normally — only PM-specific endpoints
 
 ---
 
-## 9. Useful One-Liners
+## 10. Useful One-Liners
 
 ```bash
 # How many tasks are synced to Plane?
@@ -320,6 +353,9 @@ docker compose -f docker-compose.yml -f docker-compose-plane.yml logs -f
 
 # Force-recreate the backend (after a code change without --rebuild)
 docker compose up -d --no-deps --force-recreate backend
+
+# EC2 security audit (listening ports, Docker bindings, SG check)
+bash scripts/audit-ec2-security.sh
 
 # Open a Django shell on Plane
 docker exec -it claude-skill-agent-api-1 python3 -c \

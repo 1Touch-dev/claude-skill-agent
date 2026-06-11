@@ -114,7 +114,7 @@ docker compose up -d --build
 
 - **Platform local:** http://localhost:3001 (UI), http://localhost:3000 (API)  
 - **Plane local:** http://localhost:8083  
-- **EC2:** open security group ports **3000**, **3001**, and **8083**
+- **EC2:** open security group ports **3000**, **3001**, and **8083** — do NOT open 5432 or 6379 (see [docs/ec2-security.md](docs/ec2-security.md))
 
 ### Plane CE (optional PM layer)
 
@@ -188,6 +188,20 @@ Full validation: [docs/api-validation-report.md](docs/api-validation-report.md) 
 
 ---
 
+## Security
+
+**EC2 firewall:** ports `3001` (UI), `3000` (API+webhooks), `8083` (Plane) are intentionally public for the demo.  
+**PostgreSQL (5432) and Redis (6379) must NOT be open** to `0.0.0.0/0` — see the full audit in [docs/ec2-security.md](docs/ec2-security.md).
+
+**Webhook hardening (P1-9):** `PLANE_WEBHOOK_ALLOWED_IPS` restricts which IPs may POST to `/webhooks/plane`. See [docs/runbook.md](docs/runbook.md) § Security.
+
+```bash
+# Re-run security audit at any time
+bash scripts/audit-ec2-security.sh
+```
+
+---
+
 ## Documentation
 
 ### Start here
@@ -215,6 +229,8 @@ Full validation: [docs/api-validation-report.md](docs/api-validation-report.md) 
 | [docs/SETUP.md](docs/SETUP.md) | Install and run |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design + PM layer |
 | [docs/OPERATIONS.md](docs/OPERATIONS.md) | Operations notes |
+| [docs/ec2-security.md](docs/ec2-security.md) | EC2 security group audit + hardening guide |
+| [docs/runbook.md](docs/runbook.md) | Start/stop/logs/troubleshooting/security |
 
 ---
 
