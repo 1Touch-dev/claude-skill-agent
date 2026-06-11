@@ -3,7 +3,7 @@
 **Last updated:** June 11, 2026  
 **Branch:** `feature/plane-pm-integration` (James approved Plane — operationalize on this branch; **no merge to `main` yet**)  
 **GitHub:** https://github.com/1Touch-dev/claude-skill-agent/tree/feature/plane-pm-integration  
-**Status:** Integration spike ✅ complete · **Operationalization in progress** — P0 item 1 ✅ done (James deadline: Thu Jun 12 or Fri Jun 13)
+**Status:** Integration spike ✅ complete · **Operationalization in progress** — P0 items 1 & 2 ✅ done (James deadline: Thu Jun 12 or Fri Jun 13)
 
 ---
 
@@ -73,7 +73,8 @@ Abhi told James the integration is **connected but not operationalized**. These 
 | # | Task | Why |
 |---|------|-----|
 | 1 | ~~**PM Status in admin UI**~~ — `/tasks` page with PM column + Plane badge + link in Routing Demo | ✅ **DONE Jun 11** |
-| 2 | **Single startup script** — one command starts platform + Plane + health check | Ops reliability; survives reboot |
+| ~~**Single startup script**~~ — `scripts/start.sh`, `scripts/stop.sh`, `scripts/status.sh` | ✅ **DONE Jun 11** |
+| 2 | ~~**Single startup script**~~ — `scripts/start.sh`, `scripts/stop.sh`, `scripts/status.sh` | ✅ **DONE Jun 11** |
 | 3 | **Rotate default passwords** — `PLANE_ADMIN_PASSWORD`, `PLANE_SECRET_KEY` | Security before wider use |
 | 4 | **Operational runbook** — 1-page "how to use Plane + platform together" for James/team | James asked for timeline; team needs how-to |
 | 5 | **Re-run + record demo** — task create → route → see in Plane → update in Plane → see status in platform | Proof for James that it's operational |
