@@ -125,9 +125,10 @@ async function getProject(planeProjectId) {
  * @param {string} [params.priority]  urgent|high|medium|low|none
  * @param {string} [params.state]     Plane state UUID (optional — uses default)
  * @param {object} [params.meta]      Free-form metadata stored in description
+ * @param {string[]} [params.assigneeIds]  Plane member UUIDs to assign
  */
 async function createWorkItem(planeProjectId, params) {
-  const { name, description_html, priority = 'medium', state, meta } = params;
+  const { name, description_html, priority = 'medium', state, meta, assigneeIds } = params;
 
   // Embed our metadata in description so it round-trips through webhooks
   const metaSection = meta
@@ -139,6 +140,7 @@ async function createWorkItem(planeProjectId, params) {
     description_html: (description_html || '') + metaSection,
     priority,
     ...(state ? { state } : {}),
+    ...(assigneeIds && assigneeIds.length > 0 ? { assignee_ids: assigneeIds } : {}),
   };
   // Plane stable uses /work-items/ as the canonical endpoint (alias for /issues/)
   return planeRequest('POST', `/workspaces/${cfg.workspaceSlug}/projects/${planeProjectId}/work-items/`, body);
@@ -167,6 +169,14 @@ async function addComment(planeProjectId, issueId, comment) {
   });
 }
 
+/**
+ * List all members of the configured workspace.
+ * Returns an array of member objects with at minimum { id, member: { id, email, display_name } }.
+ */
+async function listWorkspaceMembers() {
+  return planeRequest('GET', `/workspaces/${cfg.workspaceSlug}/members/`);
+}
+
 module.exports = {
   isEnabled: () => cfg.enabled,
   ping,
@@ -177,5 +187,6 @@ module.exports = {
   updateWorkItem,
   listWorkItems,
   addComment,
+  listWorkspaceMembers,
   config: cfg,
 };

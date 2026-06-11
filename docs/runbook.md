@@ -232,6 +232,54 @@ bash scripts/start.sh  # start.sh uses both compose files together
    docker compose logs backend --tail=50 | grep -i webhook
    ```
 
+### Webhook returns 403 ip_not_allowed
+
+`PLANE_WEBHOOK_ALLOWED_IPS` is set and the inbound IP is not in the list.
+
+Fix options:
+- Add Plane's egress IP to the list: `PLANE_WEBHOOK_ALLOWED_IPS=127.0.0.1,54.167.31.169,172.18.0.0/16`
+- Clear the var to allow all (dev): `PLANE_WEBHOOK_ALLOWED_IPS=` (empty value)
+- Check the rejected IP in backend logs: `docker compose logs backend | grep "rejected IP"`
+
+Restart backend after changing `.env`:
+```bash
+docker compose up -d --no-deps --force-recreate backend
+```
+
+### Plane work item has no assignee after routing
+
+The agent's Plane member mapping may not be set. To map an agent:
+
+**Via the Agents page (UI):**
+1. Open http://54.167.31.169:3001 → **Agents** in the left nav
+2. The **Plane Member** column shows a dropdown of Plane workspace members
+3. Select the desired member for each agent and click **Save**
+
+**Via API:**
+```bash
+# 1. List Plane members
+curl -s http://localhost:3000/api/pm/members \
+  -H "Authorization: Bearer changeme" | python3 -m json.tool
+
+# 2. Map globex-agent (id=2) to a member UUID
+curl -s -X PUT http://localhost:3000/api/agents/2/plane-member \
+  -H "Authorization: Bearer changeme" \
+  -H "Content-Type: application/json" \
+  -d '{"plane_member_id":"<uuid-from-step-1>","plane_member_email":"admin@planepmsystem.local"}'
+
+# 3. Verify
+curl -s http://localhost:3000/api/agents/2/plane-member \
+  -H "Authorization: Bearer changeme"
+```
+
+**Via SQL (emergency):**
+```bash
+docker exec -it claude-skill-agent-backend-db-1 psql -U postgres enterprise_skills \
+  -c "UPDATE agent_profiles SET plane_member_id='<uuid>' WHERE id=2;"
+```
+
+After mapping, the next task routed to that agent will be auto-assigned in Plane.
+
 ### Containers down after EC2 reboot
 
 All containers have `restart: unless-stopped` — they auto-restart. If they don't:

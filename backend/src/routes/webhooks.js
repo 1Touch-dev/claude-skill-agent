@@ -31,6 +31,60 @@ const STATE_MAP = {
   duplicate: 'failed',
 };
 
+/* ---------- IP allowlist check ---------- */
+
+function resolveClientIp(req) {
+  // X-Forwarded-For: first hop is the real client
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) {
+    const first = forwarded.split(',')[0].trim();
+    if (first) return first;
+  }
+  const realIp = req.headers['x-real-ip'];
+  if (realIp) return realIp.trim();
+  return req.ip || req.connection.remoteAddress || '';
+}
+
+function ipToInt(ip) {
+  const parts = ip.split('.');
+  if (parts.length !== 4) return null;
+  return parts.reduce((acc, p) => {
+    const n = parseInt(p, 10);
+    if (isNaN(n) || n < 0 || n > 255) return null;
+    return acc === null ? null : (acc * 256 + n);
+  }, 0);
+}
+
+function isIpAllowed(ip, allowlist) {
+  if (!allowlist) return true; // empty = allow all
+  for (const entry of allowlist) {
+    if (entry.includes('/')) {
+      // CIDR match
+      const [base, prefixStr] = entry.split('/');
+      const prefix = parseInt(prefixStr, 10);
+      const baseInt = ipToInt(base);
+      const clientInt = ipToInt(ip);
+      if (baseInt !== null && clientInt !== null && !isNaN(prefix)) {
+        const mask = prefix === 0 ? 0 : (~0 << (32 - prefix)) >>> 0;
+        if ((baseInt & mask) >>> 0 === (clientInt & mask) >>> 0) return true;
+      }
+    } else {
+      if (entry === ip) return true;
+    }
+  }
+  return false;
+}
+
+function checkWebhookIp(req, res, next) {
+  if (!cfg.webhookAllowedIps) return next(); // allowlist unset — allow all
+  const ip = resolveClientIp(req);
+  if (isIpAllowed(ip, cfg.webhookAllowedIps)) return next();
+  console.warn('[webhooks/plane] rejected IP:', ip);
+  return res.status(403).json({ error: 'ip_not_allowed' });
+}
+
+/* ---------- signature verification ---------- */
+
 function verifySignature(rawBody, signature) {
   if (!cfg.webhookSecret || !signature) return true; // skip if not configured
   const hmac = crypto.createHmac('sha256', cfg.webhookSecret);
@@ -40,7 +94,7 @@ function verifySignature(rawBody, signature) {
 }
 
 // Use raw body for signature verification
-router.post('/plane', express.raw({ type: 'application/json' }), async (req, res) => {
+router.post('/plane', checkWebhookIp, express.raw({ type: 'application/json' }), async (req, res) => {
   const rawBody = req.body;
   const sig = req.headers['x-plane-signature'] || req.headers['x-webhook-secret'] || '';
 

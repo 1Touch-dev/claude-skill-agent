@@ -80,13 +80,28 @@ Plane work item URL: `http://54.167.31.169:8083/claude-skills/projects/WS0002/is
 
 ## P1 — Next (week of Jun 16)
 
-| # | Task | Why |
-|---|------|-----|
-| 6 | Plane **GitHub** integration (Plane Settings) | James priority #2 in original ask |
-| 7 | Plane **Slack** integration (Plane Settings) | James priority #3 |
-| 8 | Map **agent profiles → Plane members** | Assign work items to agents/people |
-| 9 | Webhook hardening (IP allowlist on `/webhooks/plane`) | Production security |
-| 10 | EC2 security group audit — ports 3000, 3001, 8083 | External access |
+| # | Task | Why | Status |
+|---|------|-----|--------|
+| 6 | Plane **GitHub** integration (Plane Settings) | James priority #2 in original ask | pending |
+| 7 | Plane **Slack** integration (Plane Settings) | James priority #3 | pending |
+| 8 | Map **agent profiles → Plane members** | Assign work items to agents/people | ✅ DONE Jun 11 |
+| 9 | Webhook hardening (IP allowlist on `/webhooks/plane`) | Production security | ✅ DONE Jun 11 |
+| 10 | EC2 security group audit — ports 3000, 3001, 8083 | External access | pending |
+
+### P1-8 delivered (Jun 11)
+- DB migration `0010_agent_plane_mapping.sql` — adds `plane_member_id`, `plane_member_email` to `agent_profiles`
+- `GET /api/pm/members` — lists Plane workspace members
+- `GET/PUT /api/agents/:id/plane-member` — read/write agent → member mapping
+- `createWorkItem()` now accepts `assigneeIds` — passes `assignee_ids` to Plane API
+- `POST /api/route/apply` auto-assigns mapped Plane member when routing
+- Agents page UI — dropdown per agent, Save button, graceful degradation when Plane not configured
+
+### P1-9 delivered (Jun 11)
+- `PLANE_WEBHOOK_ALLOWED_IPS` env var — comma-separated IPs/CIDRs, empty = allow all
+- `checkWebhookIp` middleware added before signature check in `/webhooks/plane`
+- Resolves client IP from `X-Forwarded-For`, `X-Real-IP`, `req.ip`
+- Rejects with `403 { error: "ip_not_allowed" }` + logs to console.warn
+- `config.js` parses allowlist at startup; `.env.example` and `docs/runbook.md` updated
 
 ## P2 — Later
 

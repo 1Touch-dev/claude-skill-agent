@@ -273,4 +273,24 @@ router.get('/pm/projects', async (_req, res) => {
   res.json(result.data);
 });
 
+// List Plane workspace members (for UI member mapping dropdown)
+router.get('/pm/members', async (_req, res) => {
+  if (!plane.isEnabled()) {
+    return res.status(503).json({ error: 'plane_not_configured' });
+  }
+  const result = await plane.listWorkspaceMembers();
+  if (!result.ok) {
+    return res.status(502).json({ error: 'plane_members_failed', details: result.error });
+  }
+  // Normalize: return array of { id, display_name, email }
+  const raw = result.data;
+  const members = (Array.isArray(raw) ? raw : (raw.results || [])).map((m) => ({
+    id: m.member?.id || m.id,
+    display_name: m.member?.display_name || m.display_name || m.member?.email || '',
+    email: m.member?.email || m.email || '',
+    role: m.role,
+  }));
+  res.json(members);
+});
+
 module.exports = router;

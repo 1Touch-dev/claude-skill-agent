@@ -93,10 +93,19 @@ router.post('/route/apply', async (req, res) => {
         const priorityMap = { 0: 'low', 1: 'medium', 2: 'high', 3: 'urgent' };
         const priority = priorityMap[Math.min(task.risk_tier || 0, 3)] || 'medium';
 
+        // Load agent's Plane member mapping (if any)
+        let assigneeIds;
+        if (agent && agent.id) {
+          const agentRows = await q('SELECT plane_member_id FROM agent_profiles WHERE id=$1', [agent.id]);
+          const memberId = agentRows[0]?.plane_member_id;
+          if (memberId) assigneeIds = [memberId];
+        }
+
         const issueResult = await plane.createWorkItem(planeProjectId, {
           name: task.title,
           description_html: `<p>${task.description || task.title}</p>`,
           priority,
+          assigneeIds,
           meta: {
             control_plane_task_id: task_id,
             workspace_id,

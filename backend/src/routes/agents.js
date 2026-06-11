@@ -23,4 +23,25 @@ router.put('/agents/:id', async (req, res) => {
 });
 router.delete('/agents/:id', async (req, res) => { await q('DELETE FROM agent_profiles WHERE id=$1', [req.params.id]); res.status(204).end(); });
 
+// Plane member mapping
+router.get('/agents/:id/plane-member', async (req, res) => {
+  const rows = await q('SELECT id, name, key, plane_member_id, plane_member_email FROM agent_profiles WHERE id=$1', [req.params.id]);
+  if (!rows.length) return res.status(404).json({ error: 'agent_not_found' });
+  const a = rows[0];
+  res.json({ agent_id: a.id, name: a.name, key: a.key, plane_member_id: a.plane_member_id || null, plane_member_email: a.plane_member_email || null });
+});
+
+router.put('/agents/:id/plane-member', async (req, res) => {
+  const { plane_member_id, plane_member_email } = req.body;
+  if (plane_member_id !== null && typeof plane_member_id !== 'string') {
+    return res.status(400).json({ error: 'plane_member_id must be a string UUID or null' });
+  }
+  const rows = await q(
+    'UPDATE agent_profiles SET plane_member_id=$1, plane_member_email=$2 WHERE id=$3 RETURNING id, name, key, plane_member_id, plane_member_email',
+    [plane_member_id || null, plane_member_email || null, req.params.id]
+  );
+  if (!rows.length) return res.status(404).json({ error: 'agent_not_found' });
+  res.json(rows[0]);
+});
+
 module.exports = router;
