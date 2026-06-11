@@ -83,15 +83,27 @@ else
 fi
 
 # ── Step 3: Start core platform ───────────────────────────────────────────────
+# Use both compose files together so Docker correctly connects backend to plane-net
 echo ""
 echo -e "${BOLD}[3/5] Starting core platform (backend + frontend + postgres + redis)${NC}"
-COMPOSE_ARGS="-f docker-compose.yml"
+if [ "$SKIP_PLANE" = false ]; then
+  # Combined start ensures backend joins plane-net automatically
+  COMPOSE_ARGS="-f docker-compose.yml -f docker-compose-plane.yml"
+else
+  COMPOSE_ARGS="-f docker-compose.yml"
+fi
 if [ "$REBUILD" = true ]; then
   info "Rebuilding platform images..."
-  docker compose $COMPOSE_ARGS build --quiet
+  docker compose -f docker-compose.yml build --quiet
 fi
 docker compose $COMPOSE_ARGS up -d --remove-orphans
 ok "Core platform containers started."
+
+# Run DB migrations (idempotent — safe to run every time)
+info "Running database migrations..."
+docker compose -f docker-compose.yml exec -T backend node /app/scripts/migrate.js 2>&1 | \
+  grep -E "\[migrate\]" | sed 's/^/        /' || true
+ok "Migrations complete."
 
 # ── Step 4: Wait for health ───────────────────────────────────────────────────
 echo ""

@@ -2,6 +2,7 @@
   "name": "enterprise-claude-skills-frontend",
   "version": "1.0.0",
   "main": "src/index.js",
+  "proxy": "http://backend:3000",
   "scripts": {
     "start": "node --openssl-legacy-provider ./node_modules/react-scripts/scripts/start.js",
     "build": "react-scripts build"

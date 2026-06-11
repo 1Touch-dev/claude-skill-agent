@@ -39,13 +39,15 @@ sep
 VOLUME_FLAG=""
 [ "$REMOVE_VOLUMES" = true ] && VOLUME_FLAG="-v" && warn "Volume removal requested — data will be DELETED."
 
-if [ "$STOP_PLANE" = true ]; then
+if [ "$STOP_PLANE" = true ] && [ "$STOP_PLATFORM" = true ]; then
+  info "Stopping full stack (platform + Plane CE)..."
+  docker compose -f docker-compose.yml -f docker-compose-plane.yml down $VOLUME_FLAG
+  ok "Full stack stopped."
+elif [ "$STOP_PLANE" = true ]; then
   info "Stopping Plane CE..."
   docker compose -f docker-compose-plane.yml down $VOLUME_FLAG
   ok "Plane CE stopped."
-fi
-
-if [ "$STOP_PLATFORM" = true ]; then
+elif [ "$STOP_PLATFORM" = true ]; then
   info "Stopping core platform..."
   docker compose -f docker-compose.yml down $VOLUME_FLAG
   ok "Core platform stopped."
