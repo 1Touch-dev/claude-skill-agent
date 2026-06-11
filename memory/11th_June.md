@@ -90,14 +90,15 @@ Plane work item URL: `http://54.167.31.169:8083/claude-skills/projects/WS0002/is
 
 ### P1-10 delivered (Jun 11)
 - **Audited:** instance `i-007f63e3c802844fe`, region `us-east-1c`, SG `sg-0106b45e7552109a0` (`launch-wizard-60`)
-- **Findings:**
-  - 🔴 CRITICAL: Ports 5432 (PostgreSQL) and 6379 (Redis) bound to `0.0.0.0` via Docker host bindings
-  - 🟡 WARN: `ufw` inactive — firewall relies on AWS SG only
-  - 🟡 WARN: SG rules not queryable (no AWS CLI credentials on EC2); must inspect via AWS Console
-  - ℹ️ Ports 22, 3000, 3001, 8083 correct
-- **Action required (by ops/James):** Log into AWS Console → EC2 → Security Groups → `sg-0106b45e7552109a0` → verify 5432/6379 are NOT in inbound rules; remove if present
-- **Docs created:** `docs/ec2-security.md`, `scripts/audit-ec2-security.sh`
+- **Confirmed SG findings (AWS Console):**
+  - 🔴 CRITICAL: Port **6379 (Redis)** open to `0.0.0.0/0` — rule `sgr-0d994a19ed959b581` — **DELETE**
+  - 🔴 CRITICAL: Port **5432 (PostgreSQL)** open to `0.0.0.0/0` — rule `sgr-0d1258741902daed1` — **DELETE**
+  - 🔴 CRITICAL: Port **8083 (Plane CE)** **missing** from SG — Plane not externally reachable — **ADD**
+  - 🟡 WARN: SSH (22) open to `0.0.0.0/0` — restrict to office IP when convenient
+  - ✅ OK: Ports 3000, 3001 in SG correctly; ports 80, 443 present but unused (harmless)
+- **Docs/tools created:** `docs/ec2-security.md`, `scripts/audit-ec2-security.sh`
 - **Updated:** README.md, docs/runbook.md (Security §8), docs/SETUP.md, docs/plane-integration.md, docs/mvp-known-limitations.md
+- **Action required (ops):** Log into AWS Console → EC2 → Security Groups → edit `sg-0106b45e7552109a0`: delete 5432 + 6379 rules, add 8083 rule
 
 ### P1-8 delivered (Jun 11)
 - DB migration `0010_agent_plane_mapping.sql` — adds `plane_member_id`, `plane_member_email` to `agent_profiles`

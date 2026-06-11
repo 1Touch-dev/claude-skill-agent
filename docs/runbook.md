@@ -301,10 +301,10 @@ Quick summary:
 |------|---------|--------|
 | 3001 | Admin UI | ✅ Must be open |
 | 3000 | API + webhooks | ✅ Must be open (Plane webhook posts here) |
-| 8083 | Plane CE | ✅ Must be open |
+| 8083 | Plane CE | 🔴 **Missing from SG** — add it (Plane currently only accessible from localhost) |
 | 22 | SSH | ⚠️ Restrict to known IPs |
-| 5432 | PostgreSQL | ❌ Must NOT be open to 0.0.0.0/0 |
-| 6379 | Redis | ❌ Must NOT be open to 0.0.0.0/0 |
+| 5432 | PostgreSQL | 🔴 **Confirmed open to 0.0.0.0/0 — delete rule `sgr-0d1258741902daed1`** |
+| 6379 | Redis | 🔴 **Confirmed open to 0.0.0.0/0 — delete rule `sgr-0d994a19ed959b581`** |
 
 **Re-run audit:**
 ```bash
@@ -313,11 +313,20 @@ bash scripts/audit-ec2-security.sh
 
 **Remove dangerous SG rules (from a machine with AWS credentials):**
 ```bash
+# Delete Redis (confirmed open: sgr-0d994a19ed959b581)
 aws ec2 revoke-security-group-ingress \
-  --group-id sg-0106b45e7552109a0 --protocol tcp --port 5432 --cidr 0.0.0.0/0
+  --group-id sg-0106b45e7552109a0 \
+  --security-group-rule-ids sgr-0d994a19ed959b581
 
+# Delete PostgreSQL (confirmed open: sgr-0d1258741902daed1)
 aws ec2 revoke-security-group-ingress \
-  --group-id sg-0106b45e7552109a0 --protocol tcp --port 6379 --cidr 0.0.0.0/0
+  --group-id sg-0106b45e7552109a0 \
+  --security-group-rule-ids sgr-0d1258741902daed1
+
+# Add Plane CE port 8083 (confirmed MISSING from SG — Plane not externally accessible)
+aws ec2 authorize-security-group-ingress \
+  --group-id sg-0106b45e7552109a0 \
+  --protocol tcp --port 8083 --cidr 0.0.0.0/0
 ```
 
 ---
