@@ -180,16 +180,19 @@ Our platform (governance)          Plane CE (PM layer)
 
 ---
 
-## E2E test run (Jun 11 afternoon)
+## E2E test run (Jun 11 afternoon — full B01–B22 regression)
 
-Full regression after P0 completion — **all green, no bugs found:**
+Full matrix regression at ~12:07 UTC on commit `30a01f01` — **all green, no code fixes:**
 
 | Suite | Result |
 |-------|--------|
-| `scripts/test-pm-integration.sh` | 12/12 passed |
-| Backend `npm test` | 7 suites, 10/10 passed |
-| `scripts/status.sh` | 4/4 HTTP checks green |
-| Cursor browser E2E | Tasks, Routing, Dashboard, Agents, Integrations, Reports — all PASS |
+| `scripts/status.sh` | 4/4 HTTP checks; 13 tasks, 13/13 synced |
+| `scripts/test-pm-integration.sh` | 12/12 passed (re-run after E2E) |
+| Cursor browser B01–B18 | All PASS (18 platform pages + routing + PM badge) |
+| Plane CE B19–B22 | All PASS (login, WS0002-17 visible, Backlog→In Progress webhook sync) |
+| `scripts/audit-ec2-security.sh` | exit 1 — host postgres/redis bindings (SG blocks external) |
+
+**Highlights:** Created task #13 "E2E Jun11 regression task" → Plane WS0002-17; changed state in Plane → platform status `queued`→`running` via webhook.
 
 Report: [docs/live-browser-test-report-jun11.md](../docs/live-browser-test-report-jun11.md)
 
