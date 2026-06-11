@@ -1,6 +1,47 @@
 import React, { useState } from 'react';
 import { apiGet, apiPost } from '../lib/api';
 
+// Plane CE external UI base (update if host/port changes)
+const PLANE_UI = 'http://54.167.31.169:8083';
+const PLANE_WORKSPACE = 'claude-skills';
+const PLANE_PROJECT = 'WS0002';
+
+function planeIssueUrl(issueId) {
+  if (!issueId) return null;
+  return `${PLANE_UI}/${PLANE_WORKSPACE}/projects/${PLANE_PROJECT}/issues/${issueId}/`;
+}
+
+function PmBadge({ task }) {
+  if (!task.plane_issue_id) {
+    return <span style={{ color: '#999', fontSize: '0.8rem' }}>—</span>;
+  }
+  const url = planeIssueUrl(task.plane_issue_id);
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={`Plane issue ${task.plane_issue_id}`}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px',
+        background: '#eef2ff',
+        color: '#4338ca',
+        border: '1px solid #c7d2fe',
+        borderRadius: '4px',
+        padding: '2px 7px',
+        fontSize: '0.78rem',
+        fontWeight: 600,
+        textDecoration: 'none',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      ✈ #{task.plane_issue_sequence_id || '?'}
+    </a>
+  );
+}
+
 export default function RoutingDemo() {
   const [tasks, setTasks] = useState([]);
   const [result, setResult] = useState(null);
@@ -17,7 +58,7 @@ export default function RoutingDemo() {
   async function loadTasks() {
     try {
       const data = await apiGet('/tasks');
-      setTasks(Array.isArray(data) ? data.slice(0, 8) : []);
+      setTasks(Array.isArray(data) ? data.slice(0, 10) : []);
     } catch (e) {
       setErr(String(e));
     }
@@ -68,8 +109,9 @@ export default function RoutingDemo() {
         risk_tier: Number(form.risk_tier),
       });
       setResult({ route, applied });
-      setMsg(`Task #${taskId} routed to agent ${route.agent_name || route.agent_id}.`);
-      loadTasks();
+      setMsg(`Task #${taskId} routed to agent ${route.agent_name || route.agent_id}. Syncing to Plane…`);
+      // Reload after a short delay to pick up the Plane issue ID written by auto-sync
+      setTimeout(loadTasks, 2000);
     } catch (e2) {
       setErr(String(e2));
     }
@@ -127,18 +169,44 @@ export default function RoutingDemo() {
                 <th>ID</th>
                 <th>Title</th>
                 <th>Status</th>
+                <th>PM (Plane)</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
+              {tasks.length === 0 && (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: 'center', color: '#999' }}>No tasks yet.</td>
+                </tr>
+              )}
               {tasks.map((t) => (
                 <tr key={t.id}>
                   <td>{t.id}</td>
-                  <td>{t.title}</td>
-                  <td>{t.status}</td>
+                  <td style={{ maxWidth: '260px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {t.title}
+                  </td>
+                  <td>
+                    <span style={{
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      background: t.status === 'completed' ? '#dcfce7'
+                        : t.status === 'running' ? '#fef9c3'
+                        : t.status === 'failed' ? '#fee2e2'
+                        : '#f3f4f6',
+                      color: t.status === 'completed' ? '#15803d'
+                        : t.status === 'running' ? '#854d0e'
+                        : t.status === 'failed' ? '#dc2626'
+                        : '#374151',
+                    }}>
+                      {t.status}
+                    </span>
+                  </td>
+                  <td><PmBadge task={t} /></td>
                   <td>
                     <button type="button" className="btn-secondary" onClick={() => routeTask(t.id)}>
-                      Route & Apply
+                      Route &amp; Apply
                     </button>
                   </td>
                 </tr>
@@ -146,11 +214,56 @@ export default function RoutingDemo() {
             </tbody>
           </table>
         </div>
+        <p style={{ fontSize: '0.78rem', color: '#6b7280', marginTop: '6px' }}>
+          ✈ badge = synced to{' '}
+          <a href={`${PLANE_UI}/${PLANE_WORKSPACE}/projects/`} target="_blank" rel="noopener noreferrer">
+            Plane CE
+          </a>
+          {' '}— click to open work item
+        </p>
       </section>
 
       {result && (
         <section className="panel">
           <h3>Last Routing Result</h3>
+          {result.applied?.plane_issue_id && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              marginBottom: '12px',
+              padding: '10px 14px',
+              background: '#eef2ff',
+              border: '1px solid #c7d2fe',
+              borderRadius: '6px',
+            }}>
+              <span style={{ fontWeight: 600, color: '#4338ca' }}>✈ Synced to Plane</span>
+              <a
+                href={planeIssueUrl(result.applied.plane_issue_id)}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#4338ca', fontWeight: 600 }}
+              >
+                Open Work Item →
+              </a>
+              <span style={{ color: '#6b7280', fontSize: '0.8rem' }}>
+                Issue ID: {result.applied.plane_issue_id.slice(0, 8)}…
+              </span>
+            </div>
+          )}
+          {!result.applied?.plane_issue_id && (
+            <div style={{
+              marginBottom: '12px',
+              padding: '8px 14px',
+              background: '#f9fafb',
+              border: '1px solid #e5e7eb',
+              borderRadius: '6px',
+              color: '#6b7280',
+              fontSize: '0.85rem',
+            }}>
+              ⏳ Plane sync in progress (fire-and-forget — reload tasks in a moment)
+            </div>
+          )}
           <pre className="code-block">{JSON.stringify(result, null, 2)}</pre>
         </section>
       )}

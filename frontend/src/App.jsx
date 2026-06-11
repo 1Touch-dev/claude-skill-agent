@@ -20,6 +20,7 @@ import Approvals from './pages/Approvals';
 import Audit from './pages/Audit';
 import Integrations from './pages/Integrations';
 import RoutingDemo from './pages/RoutingDemo';
+import Tasks from './pages/Tasks';
 import Footer from './components/Footer';
 
 function AppLayout() {
@@ -50,6 +51,7 @@ function AppLayout() {
             <Route path="/agents" component={Agents} />
             <Route path="/runs" component={Runs} />
             <Route path="/routing" component={RoutingDemo} />
+            <Route path="/tasks" component={Tasks} />
             <Route path="/approvals" component={Approvals} />
             <Route path="/integrations" component={Integrations} />
             <Route path="/audit" component={Audit} />
