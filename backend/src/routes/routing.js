@@ -1,6 +1,7 @@
 const express = require('express');
 const { pool } = require('../lib/db');
 const plane = require('../services/pm-bridge');
+const slack = require('../services/slack');
 
 const router = express.Router();
 const q = (t, p = []) => pool.query(t, p).then(r => r.rows);
@@ -120,11 +121,59 @@ router.post('/route/apply', async (req, res) => {
           await q('UPDATE task_intake SET plane_issue_id=$1, plane_issue_sequence_id=$2 WHERE id=$3',
             [issueResult.data.id, issueResult.data.sequence_id || null, task_id]);
         }
+
+        // Post Slack notification after Plane sync (or without it if Plane disabled)
+        if (slack.isEnabled()) {
+          try {
+            const freshTask = (await q('SELECT * FROM task_intake WHERE id=$1', [task_id]))[0] || task;
+            const ws = wsRows[0];
+            const planeSeq = issueResult.ok ? issueResult.data.sequence_id : null;
+            const planeUrl = issueResult.ok
+              ? `http://54.167.31.169:8083/${process.env.PLANE_WORKSPACE_SLUG || 'claude-skills'}/projects/${planeProjectId}/issues/${issueResult.data.id}/`
+              : null;
+            const { text, blocks } = slack.buildTaskRoutedMessage({
+              task: freshTask,
+              agent,
+              planeIssueUrl: planeUrl,
+              workspaceName: ws.name,
+            });
+            const slackResult = await slack.postMessage(null, text, blocks);
+            if (slackResult.ok) {
+              await q(
+                'UPDATE task_intake SET slack_channel_id=$1, slack_message_ts=$2 WHERE id=$3',
+                [slackResult.channel, slackResult.ts, task_id]
+              );
+            }
+          } catch (slackErr) {
+            console.error('[slack] routing notify error:', slackErr.message);
+          }
+        }
       } catch (syncErr) {
-        // Plane sync failure must never crash routing
+        // Plane/Slack sync failure must never crash routing
         console.error('[pm-bridge] auto-sync error:', syncErr.message);
       }
     });
+
+    // Fire Slack-only notification immediately if Plane is disabled
+    if (!plane.isEnabled() && slack.isEnabled()) {
+      setImmediate(async () => {
+        try {
+          const taskRows = await q('SELECT * FROM task_intake WHERE id=$1', [task_id]);
+          if (!taskRows.length) return;
+          const task = taskRows[0];
+          const wsRows = await q('SELECT name FROM workspaces WHERE id=$1', [workspace_id]);
+          const wsName = wsRows[0]?.name;
+          const { text, blocks } = slack.buildTaskRoutedMessage({ task, agent, workspaceName: wsName });
+          const slackResult = await slack.postMessage(null, text, blocks);
+          if (slackResult.ok) {
+            await q('UPDATE task_intake SET slack_channel_id=$1, slack_message_ts=$2 WHERE id=$3',
+              [slackResult.channel, slackResult.ts, task_id]);
+          }
+        } catch (e) {
+          console.error('[slack] standalone notify error:', e.message);
+        }
+      });
+    }
 
     res.status(201).json({ route: routeRow, run: runRow });
   } catch (e) {

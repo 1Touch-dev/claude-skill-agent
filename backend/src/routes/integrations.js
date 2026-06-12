@@ -91,8 +91,8 @@ router.post('/integrations/:id/test', async (req, res) => {
     const conn = rows[0];
     if (!conn) return res.status(404).json({ error: 'not_found' });
 
-    const result = testProvider(conn.provider, conn.credential_vault);
-    const newStatus = result.status;
+    const result = await testProvider(conn.provider, conn.credential_vault);
+    const newStatus = result.status || (result.ok ? 'connected' : 'error');
 
     await q(
       `UPDATE integration_connections SET status=$1, updated_at=now() WHERE id=$2`,
