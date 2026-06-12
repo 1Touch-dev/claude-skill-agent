@@ -220,7 +220,7 @@ If `PLANE_API_TOKEN` or `PLANE_WORKSPACE_SLUG` is empty, all pm-bridge calls ret
 - [ ] Change `PLANE_SECRET_KEY` in `.env` / `docker-compose-plane.yml`
 - [ ] Change default admin password (`PLANE_ADMIN_PASSWORD`)
 - [x] IP allowlist on `/webhooks/plane` via `PLANE_WEBHOOK_ALLOWED_IPS` (P1-9)
-- [ ] Set up Plane GitHub + Slack integrations via Plane Settings
+- [x] GitHub + Slack — **built in platform** (not Plane CE Commercial). See [integration-github.md](integration-github.md) and [integration-slack.md](integration-slack.md). Repo webhook pending admin.
 - [ ] Consider Nginx reverse proxy to unify domains
 - [ ] Add Plane services to backup rotation
 

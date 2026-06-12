@@ -1,7 +1,7 @@
 # Operations Runbook — Claude Skills Platform + Plane CE
 
-**Version:** 1.0 · **Updated:** June 2026  
-**Branch:** `feature/plane-pm-integration`  
+**Version:** 1.1 · **Updated:** June 12, 2026  
+**Branch:** `feature/platform-github-slack`  
 **Author:** Engineering team
 
 ---
@@ -85,8 +85,11 @@ curl http://54.167.31.169:3000/health/live
 curl -s -X POST http://54.167.31.169:3000/api/pm/ping \
   -H "Authorization: Bearer changeme"
 
-# Run full integration test suite (12 tests)
+# Run full PM integration test suite (12 tests)
 bash scripts/test-pm-integration.sh http://localhost:3000
+
+# Run GitHub + Slack connector tests
+bash scripts/test-integrations.sh http://localhost:3000
 ```
 
 ---
@@ -117,6 +120,23 @@ bash scripts/test-pm-integration.sh http://localhost:3000
 4. Work items map 1:1 to tasks created through our platform
 5. Updating a work item state in Plane (e.g. "In Progress" → "Done") fires a webhook
 6. The webhook updates `task_intake.status` in our platform automatically
+7. If Slack is configured, a **thread reply** is posted in `#server-alerts` (or `SLACK_DEFAULT_CHANNEL`)
+
+### GitHub + Slack sync (platform hub)
+
+When a task is routed:
+
+1. Plane work item is created (if pm-bridge enabled)
+2. Slack posts a notification to `SLACK_DEFAULT_CHANNEL` with task title, agent, and Plane link
+3. `task_intake.slack_channel_id` and `slack_message_ts` are stored for thread replies
+
+When a GitHub PR is opened/merged (branch or title contains `task-{id}`):
+
+1. `POST /webhooks/github` updates task status
+2. Plane issue state syncs via pm-bridge
+3. Slack thread reply is posted (if linked)
+
+**Setup guides:** [integration-github.md](integration-github.md) · [integration-slack.md](integration-slack.md)
 
 ---
 
@@ -132,6 +152,12 @@ All credentials live in `.env` (gitignored — never commit it).
 | Plane API token | `PLANE_API_TOKEN` | Used by pm-bridge to call Plane API |
 | Plane webhook secret | `PLANE_WEBHOOK_SECRET` | Validates incoming Plane webhooks |
 | Plane secret key | `PLANE_SECRET_KEY` | Django signing key — rotate if compromised |
+| GitHub PAT | `GITHUB_TOKEN` | Live API test + future issue create |
+| GitHub webhook secret | `GITHUB_WEBHOOK_SECRET` | Validates `X-Hub-Signature-256` on `/webhooks/github` |
+| GitHub default repo | `GITHUB_DEFAULT_REPO` | e.g. `1Touch-dev/claude-skill-agent` |
+| Slack bot token | `SLACK_BOT_TOKEN` | Post messages (`xoxb-...`) |
+| Slack signing secret | `SLACK_SIGNING_SECRET` | Validates Events API (not url_verification) |
+| Slack default channel | `SLACK_DEFAULT_CHANNEL` | Channel ID for notifications |
 
 ### Rotating passwords
 
@@ -223,7 +249,7 @@ bash scripts/stop.sh
 bash scripts/start.sh  # start.sh uses both compose files together
 ```
 
-### Webhook not firing
+### Webhook not firing (Plane)
 
 1. Check Plane UI → Settings → Webhooks — confirm webhook is active
 2. Verify `PLANE_WEBHOOK_SECRET` in `.env` matches what's registered in Plane
@@ -231,6 +257,34 @@ bash scripts/start.sh  # start.sh uses both compose files together
    ```bash
    docker compose logs backend --tail=50 | grep -i webhook
    ```
+
+### GitHub webhook not updating tasks
+
+1. Confirm repo webhook exists: https://github.com/1Touch-dev/claude-skill-agent/settings/hooks (**requires repo Admin**)
+2. Payload URL must be `http://54.167.31.169:3000/webhooks/github`
+3. `GITHUB_WEBHOOK_SECRET` in `.env` must match GitHub webhook **Secret** field
+4. PR branch/title must include `task-{id}` (e.g. `feature/task-18-fix`)
+5. Check Recent Deliveries in GitHub webhook settings for 401/500 errors
+
+### Slack notifications missing
+
+1. Verify `SLACK_BOT_TOKEN` and `SLACK_DEFAULT_CHANNEL` in `.env`
+2. Bot must be invited to the channel: `/invite @Globex Platform`
+3. Test: Integrations UI → Slack → **Test connection** → `mode: live`
+4. Route a new task — message appears in ~2s
+
+### Slack Event Subscriptions
+
+**Status (Jun 12):** ✅ Enabled — URL verified, `app_mention` subscribed, app reinstalled.
+
+If reconfiguring:
+1. Open https://api.slack.com/apps/A0B9XTZS33M/event-subscriptions
+2. Enable Events → Request URL `http://54.167.31.169:3000/webhooks/slack`
+3. Wait for **Verified ✓**
+4. Add at least one bot event (e.g. `app_mention`) — **Save Changes** stays disabled until then
+5. Reinstall app if Slack shows a scope-change banner
+
+See [integration-slack.md](integration-slack.md)
 
 ### Webhook returns 403 ip_not_allowed
 
@@ -334,17 +388,21 @@ aws ec2 authorize-security-group-ingress \
 ## 9. Architecture Summary
 
 ```
-Our platform (governance)         Plane CE (PM layer)
-:3001 UI  :3000 API               :8083 UI/API
-     │         │                         │
-     │         ├── pm-bridge REST ──────▶ projects, work-items
-     │         └── /webhooks/plane ◀───── work item events
+GitHub ──webhook──▶ /webhooks/github
+Slack  ──events──▶ /webhooks/slack
+Plane  ──webhook──▶ /webhooks/plane
+                         │
+Our platform (:3001 UI, :3000 API)
+     ├── task_intake (source of truth)
+     ├── pm-bridge REST ──────────▶ Plane CE (:8083)
+     ├── services/github
+     └── services/slack ─────────▶ Slack workspace
 ```
 
-**Platform owns:** skills, agents, approvals, routing, credits, audit, task governance  
-**Plane owns:** project boards, work items, sprints, roadmaps, GitHub/Slack integrations
+**Platform owns:** skills, agents, approvals, routing, credits, audit, task governance, **GitHub/Slack hub**  
+**Plane owns:** project boards, work items, sprints, roadmaps (no native GitHub/Slack on CE)
 
-If Plane is down, the platform continues normally — only PM-specific endpoints return 503.
+If Plane is down, the platform continues normally — only PM-specific endpoints return 503. Slack outbound still works if only Plane is down.
 
 ---
 

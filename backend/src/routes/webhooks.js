@@ -163,9 +163,14 @@ async function handleIssueUpdated(planeIssueId, data) {
     }
   }
 
-  // Update plane_webhook_events with task link
+  // Update plane_webhook_events with task link (most recent unlinked event first)
   await q(
-    'UPDATE plane_webhook_events SET task_id=$1 WHERE plane_issue_id=$2 AND task_id IS NULL ORDER BY id DESC',
+    `UPDATE plane_webhook_events SET task_id=$1
+     WHERE id = (
+       SELECT id FROM plane_webhook_events
+       WHERE plane_issue_id=$2 AND task_id IS NULL
+       ORDER BY id DESC LIMIT 1
+     )`,
     [task.id, planeIssueId]
   );
 }

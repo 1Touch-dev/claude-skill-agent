@@ -2,7 +2,7 @@
 
 **Audience:** Business users, managers, and stakeholders (non-technical)  
 **MVP demo environment:** http://54.167.31.169:3001  
-**Last updated:** June 2026
+**Last updated:** June 12, 2026
 
 ---
 
@@ -55,7 +55,7 @@ flowchart TB
 | **Industry overlays** | Add-on capability packs for industries (SaaS, FinServ, Healthcare, etc.). |
 | **Approvals** | High-risk runs can require human approve/reject before proceeding. |
 | **Audit logging** | Every important action on a run is recorded for compliance and troubleshooting. |
-| **Integrations** | Registry for tools like GitHub, Slack, and Asana (connection status and health). |
+| **Integrations** | Registry for GitHub, Slack, Asana, etc. GitHub and Slack use **live** connections; others are mock in MVP. |
 | **Usage metering** | Skill runs consume credits; pools and reports support chargeback and planning. |
 
 ---
@@ -209,10 +209,22 @@ The **integration registry** lists external systems (Asana, GitHub, Slack, Monda
 | Feature | Description |
 |---------|-------------|
 | **Status** | connected, disconnected, error (visual badges). |
-| **Test connection** | Validates configuration (MVP uses **mock** validation — not live OAuth). |
+| **Test connection** | **GitHub** and **Slack** call real APIs (`mode: live`). Asana/Monday/Trello use mock validation. |
 | **Create / delete** | Register or remove a connector record for a workspace. |
 
-> **Important for stakeholders:** The MVP proves the **integration control plane** (registry, status, test workflow). It does **not** perform live sync with vendor APIs yet. See [mvp-known-limitations.md](mvp-known-limitations.md).
+### GitHub + Slack (June 2026)
+
+Our platform is the **hub** — not Plane Commercial:
+
+| System | What happens automatically |
+|--------|---------------------------|
+| **Slack** | When you **Route & Apply** a task, a message appears in the team channel with task title, agent, and Plane link. Status changes (Plane or GitHub) post **thread replies**. |
+| **GitHub** | When a PR is opened or merged and the branch/title includes `task-{id}`, the platform task status updates and Plane syncs. Requires repo webhook (admin setup). |
+| **Plane** | Work items still sync as before; dragging cards in Plane updates our task status. |
+
+**Technical setup:** [integration-github.md](integration-github.md) · [integration-slack.md](integration-slack.md)
+
+> **Stakeholder note:** GitHub repo webhook registration requires **repo admin** (James). Slack outbound notifications and Event Subscriptions are configured; inbound `@mention` events are logged but not yet acted on.
 
 ---
 
@@ -225,6 +237,7 @@ Shows how work enters the platform and gets **routed to an agent**:
 1. **Create task** — title, workspace, skill key (e.g. `mkt_campaign_brief` for marketing).
 2. **Route & apply** — engine picks an agent and creates orchestration records.
 3. **Result** — confirms which agent was selected; run/orchestration data is persisted.
+4. **Side effects** (when configured): Plane work item created (✈ badge on **Tasks** page); Slack notification in `#server-alerts`.
 
 Use skill keys that match agent permissions (demo: `mkt_campaign_brief` on workspace 2).
 
@@ -329,6 +342,8 @@ Reference captures from live browser testing: [screenshots/README.md](screenshot
 |----------|----------|
 | [mvp-demo-script.md](mvp-demo-script.md) | Presenter script for stakeholder demo |
 | [mvp-known-limitations.md](mvp-known-limitations.md) | Honest MVP boundaries |
+| [integration-github.md](integration-github.md) | GitHub webhook + PR sync |
+| [integration-slack.md](integration-slack.md) | Slack notifications setup |
 | [mvp-acceptance-report.md](mvp-acceptance-report.md) | QA and acceptance evidence |
 | [live-browser-test-report.md](live-browser-test-report.md) | Live browser proof |
 

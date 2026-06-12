@@ -19,7 +19,7 @@ cp .env.example .env
 ### Docker (recommended)
 
 ```bash
-git checkout feature/plane-pm-integration
+git checkout feature/platform-github-slack
 docker compose up -d --build
 docker compose exec backend npm run migrate
 ```
@@ -37,7 +37,7 @@ cd frontend && npm install && npm start
 
 ## Plane CE (optional PM layer)
 
-Requires branch `feature/plane-pm-integration`.
+Requires branch `feature/platform-github-slack` (includes Plane pm-bridge).
 
 ```bash
 # One-time: shared Docker network
@@ -69,6 +69,25 @@ bash scripts/test-pm-integration.sh http://localhost:3000
 Register webhook in Plane UI: **Settings → Webhooks** → `http://<your-host>:3000/webhooks/plane` (Work items events).
 
 Full reference: [plane-integration.md](plane-integration.md)
+
+## GitHub + Slack (platform hub)
+
+Set in `.env` (see `.env.example`):
+
+- `GITHUB_TOKEN`, `GITHUB_WEBHOOK_SECRET`, `GITHUB_DEFAULT_REPO`
+- `SLACK_BOT_TOKEN`, `SLACK_SIGNING_SECRET`, `SLACK_DEFAULT_CHANNEL`
+
+```bash
+docker compose up -d --build backend
+bash scripts/test-integrations.sh http://localhost:3000
+```
+
+External registration (one-time):
+
+- **GitHub:** repo Settings → Webhooks → `http://<your-host>:3000/webhooks/github` (requires repo **Admin**)
+- **Slack:** app Event Subscriptions → `http://<your-host>:3000/webhooks/slack`
+
+Guides: [integration-github.md](integration-github.md) · [integration-slack.md](integration-slack.md)
 
 ## EC2 ports
 

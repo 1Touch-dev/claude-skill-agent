@@ -2,9 +2,9 @@
 
 A multi-tenant **AI control plane** for governing Claude skills, agents, department suites, industry overlays, licensing, metering, approvals, audit, and integrations across enterprise workspaces.
 
-> **Current branch:** `feature/plane-pm-integration` (June 2026)  
-> Adds **Plane CE** as an optional PM layer via `pm-bridge` — workspace/task sync + bidirectional webhooks.  
-> **Do not merge to `main` yet** — all Plane work stays on this branch until explicitly approved.
+> **Current branch:** `feature/platform-github-slack` (June 2026)  
+> Adds **Plane CE** pm-bridge + **live GitHub/Slack** integrations (platform hub, not Plane Commercial).  
+> **Do not merge to `main` yet** — awaiting James approval.
 
 ---
 
@@ -19,6 +19,7 @@ This is **not** a task manager or a prompt library. It is an enterprise **govern
 - **Meter usage** through skill credits and subscription tiers  
 - Enforce **approvals**, **audit logging**, and **integration registry** workflows  
 - **(Plane branch)** Sync routed tasks to **Plane CE** work items and receive status updates via webhooks  
+- **(Integrations branch)** Live **GitHub** PR/issue webhooks and **Slack** notifications — platform as integration hub  
 
 **Live demo (EC2):**
 
@@ -45,6 +46,8 @@ flowchart LR
   API --> DB
   API --> RD
   API <-->|REST + webhooks| PM
+  GH[GitHub] -->|webhooks| API
+  API -->|Web API| SL[Slack]
 ```
 
 | Layer | Technology |
@@ -75,7 +78,7 @@ Detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Plane: [docs/plane-integ
 | Skill Runs | ✅ | ✅ | |
 | Approvals | ✅ | ✅ | Approve / reject |
 | Audit Logs | ✅ | ✅ | By run ID |
-| Integrations | ✅ | ✅ | Mock test connection |
+| Integrations | ✅ | ✅ | Live GitHub/Slack test; mock for others |
 | Routing Demo | ✅ | ✅ | Task → route → apply |
 | Reports | ✅ | ✅ | Multiple report endpoints |
 | Auth | ✅ | ⚠️ | Bearer token + roles (not SSO) |
@@ -89,6 +92,19 @@ Detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Plane: [docs/plane-integ
 | Plane webhook → `task_intake.status` update | ✅ Registered |
 | Graceful degradation if Plane not configured | ✅ 503, platform unaffected |
 | E2E test suite | ✅ 12/12 (`scripts/test-pm-integration.sh`) |
+
+### GitHub + Slack hub (`feature/platform-github-slack`)
+
+| Capability | Status |
+|--------------|--------|
+| Live GitHub/Slack connection test | ✅ |
+| Slack notify on route + status change | ✅ |
+| Slack Event Subscriptions (`app_mention`) | ✅ |
+| GitHub webhook → task + Plane + Slack | ✅ (repo webhook needs admin) |
+| Webhook receivers `/webhooks/github`, `/webhooks/slack` | ✅ |
+| Integration test script | ✅ `scripts/test-integrations.sh` |
+
+Guides: [docs/integration-github.md](docs/integration-github.md) · [docs/integration-slack.md](docs/integration-slack.md)
 
 MVP boundaries: [docs/mvp-known-limitations.md](docs/mvp-known-limitations.md)
 
@@ -181,7 +197,7 @@ Prefix: `/api` (authenticated via `Authorization: Bearer <token>` and optional `
 | Integrations | `GET/POST/PUT/DELETE /integrations`, `POST /integrations/:id/test` |
 | Routing | `GET/POST /tasks`, `POST /route`, `POST /route/apply` |
 | **PM Bridge** | `POST /pm/ping`, `POST /pm/workspaces/:id/sync`, `POST /pm/tasks/:id/sync` |
-| Webhooks | `POST /webhooks/plane` (Plane → us, no Bearer auth) |
+| Webhooks | `POST /webhooks/plane`, `/webhooks/github`, `/webhooks/slack` (no Bearer auth) |
 | Health | `GET /health/live`, `GET /health/ready` |
 
 Full validation: [docs/api-validation-report.md](docs/api-validation-report.md) · PM detail: [docs/plane-integration.md](docs/plane-integration.md)
@@ -211,6 +227,8 @@ bash scripts/audit-ec2-security.sh
 | [docs/user-guide.md](docs/user-guide.md) | Non-technical guide |
 | [docs/mvp-demo-script.md](docs/mvp-demo-script.md) | 5-minute executive demo |
 | [docs/plane-integration.md](docs/plane-integration.md) | **Plane CE pm-bridge** — setup, API, webhooks |
+| [docs/integration-github.md](docs/integration-github.md) | **GitHub** webhook + PR sync |
+| [docs/integration-slack.md](docs/integration-slack.md) | **Slack** notifications + Events API |
 | [docs/pm-platform-feasibility-study.md](docs/pm-platform-feasibility-study.md) | Worksuite vs Taskly vs Plane decision |
 | [docs/mvp-known-limitations.md](docs/mvp-known-limitations.md) | Honest MVP boundaries |
 
@@ -218,6 +236,7 @@ bash scripts/audit-ec2-security.sh
 
 | Document | Purpose |
 |----------|---------|
+| [memory/12th_June.md](memory/12th_June.md) | **GitHub + Slack** platform hub sprint |
 | [memory/10th_June.md](memory/10th_June.md) | **Plane PM integration** — spike, tests, webhook |
 | [memory/3rd_June.md](memory/3rd_June.md) | MVP completion sprint |
 | [memory/2nd_June.md](memory/2nd_June.md) | Full requirements / completion plan |
@@ -240,15 +259,18 @@ bash scripts/audit-ec2-security.sh
 claude-skill-agent/
 ├── backend/
 │   ├── src/services/pm-bridge/   # Plane REST client
+│   ├── src/services/github/      # GitHub API client
+│   ├── src/services/slack/       # Slack Web API client
 │   ├── src/routes/pm.js          # /api/pm/*
-│   ├── src/routes/webhooks.js    # /webhooks/plane
-│   └── db/migrations/0009_pm_bridge.sql
+│   ├── src/routes/webhooks.js    # /webhooks/plane|github|slack
+│   └── db/migrations/0009_pm_bridge.sql, 0011_github_slack_links.sql
 ├── frontend/                     # React admin UI
 ├── docs/                         # Guides, feasibility study, plane-integration
 ├── memory/                       # Sprint logs (10th_June.md = Plane spike)
 ├── scripts/
 │   ├── plane-setup.sh            # Bootstrap Plane CE
-│   └── test-pm-integration.sh    # 12-test e2e suite
+│   ├── test-pm-integration.sh    # 12-test PM e2e suite
+│   └── test-integrations.sh      # GitHub + Slack connector tests
 ├── docker-compose.yml            # Platform stack (+ plane-net)
 └── docker-compose-plane.yml      # Plane CE stack
 ```
@@ -261,6 +283,7 @@ claude-skill-agent/
 cd backend && npm test
 ./scripts/api-validate.sh
 bash scripts/test-pm-integration.sh http://localhost:3000   # requires Plane + backend
+bash scripts/test-integrations.sh http://localhost:3000    # GitHub + Slack connectors
 ```
 
 ---
@@ -270,7 +293,8 @@ bash scripts/test-pm-integration.sh http://localhost:3000   # requires Plane + b
 | Branch | Purpose |
 |--------|---------|
 | `main` | Stable MVP baseline — **no Plane merge until approved** |
-| `feature/plane-pm-integration` | **Active** — Plane CE pm-bridge, docs, tests |
+| `feature/plane-pm-integration` | Plane CE pm-bridge (merged into integrations branch) |
+| `feature/platform-github-slack` | **Active** — GitHub + Slack hub, Plane bridge |
 
 ---
 

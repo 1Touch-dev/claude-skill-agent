@@ -5,6 +5,8 @@
 **GitHub:** https://github.com/1Touch-dev/claude-skill-agent/tree/feature/plane-pm-integration  
 **Status:** ✅ **ALL P0 OPERATIONALIZATION TASKS COMPLETE** — ahead of Thu/Fri deadline
 
+> **Continued in [12th_June.md](12th_June.md)** — GitHub + Slack platform hub (June 12). P1-6/P1-7 re-scoped from Plane Settings to platform integrations.
+
 ---
 
 ## James conversation (June 10 evening)
@@ -82,8 +84,8 @@ Plane work item URL: `http://54.167.31.169:8083/claude-skills/projects/WS0002/is
 
 | # | Task | Why | Status |
 |---|------|-----|--------|
-| 6 | Plane **GitHub** integration (Plane Settings) | James priority #2 in original ask | pending |
-| 7 | Plane **Slack** integration (Plane Settings) | James priority #3 | pending |
+| 6 | Plane **GitHub** integration (Plane Settings) | James priority #2 — **re-scoped Jun 12** to platform hub | → see [12th_June.md](12th_June.md) |
+| 7 | Plane **Slack** integration (Plane Settings) | James priority #3 — **re-scoped Jun 12** to platform hub | → see [12th_June.md](12th_June.md) |
 | 8 | Map **agent profiles → Plane members** | Assign work items to agents/people | ✅ DONE Jun 11 |
 | 9 | Webhook hardening (IP allowlist on `/webhooks/plane`) | Production security | ✅ DONE Jun 11 |
 | 10 | EC2 security group audit — ports 3000, 3001, 8083 | External access | ✅ DONE Jun 11 |
@@ -176,7 +178,7 @@ Our platform (governance)          Plane CE (PM layer)
 ```
 
 **Our platform owns:** skills, agents, approvals, routing, credits, audit  
-**Plane owns:** project boards, work items, sprints, roadmaps, GitHub/Slack integrations
+**Plane owns:** project boards, work items, sprints, roadmaps (GitHub/Slack built in platform — see [12th_June.md](12th_June.md))
 
 ---
 

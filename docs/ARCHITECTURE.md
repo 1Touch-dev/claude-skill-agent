@@ -30,3 +30,30 @@ React Admin UI (:3001)     Express API (:3000)     Plane CE (:8083)
 | Shared Docker network | `plane-net` — backend joins it to reach `plane-proxy:80` |
 
 Detail: [plane-integration.md](plane-integration.md)
+
+## Integration hub (GitHub + Slack) — `feature/platform-github-slack`
+
+GitHub and Slack connect to the **platform**, not Plane CE (Commercial only). The platform orchestrates `task_intake` and syncs to Plane via pm-bridge.
+
+```
+GitHub ──POST /webhooks/github──▶ Express API
+Slack  ──POST /webhooks/slack───▶ Express API
+                                        │
+                    ┌───────────────────┼───────────────────┐
+                    ▼                   ▼                   ▼
+              task_intake         pm-bridge            services/slack
+                    │                   │                   │
+                    └───────────────────┼───────────────────┘
+                                        ▼
+                                  Plane CE (:8083)
+```
+
+| Component | Location |
+|-----------|----------|
+| GitHub client | `backend/src/services/github/` |
+| Slack client | `backend/src/services/slack/` |
+| Webhook receivers | `backend/src/routes/webhooks.js` |
+| Route → Slack notify | `backend/src/routes/routing.js` |
+| DB link columns + event log | `backend/db/migrations/0011_github_slack_links.sql` |
+
+Detail: [integration-github.md](integration-github.md) · [integration-slack.md](integration-slack.md)

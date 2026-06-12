@@ -1,12 +1,13 @@
 # MVP Known Limitations
 
-**Branch:** `feature/plane-pm-integration` (extends MVP; **not merged to `main`**)  
+**Branch:** `feature/platform-github-slack` (extends MVP; **not merged to `main`**)  
 **Audience:** Stakeholders, product, engineering  
 **Purpose:** Honest boundaries for what the MVP does **not** do yet  
 
 This document prevents over-promising during demos and sets clear roadmap expectations.
 
-> **June 10 update:** Branch `feature/plane-pm-integration` adds an optional **Plane CE pm-bridge** (workspace/task sync + webhooks). That is a **spike/integration layer**, not a full in-platform PM product. See [plane-integration.md](plane-integration.md).
+> **June 10 update:** Branch `feature/plane-pm-integration` adds **Plane CE pm-bridge**. See [plane-integration.md](plane-integration.md).  
+> **June 12 update:** Branch `feature/platform-github-slack` adds **live GitHub + Slack connectors** (platform hub, not Plane Commercial). See [integration-github.md](integration-github.md) and [integration-slack.md](integration-slack.md).
 
 ---
 
@@ -16,7 +17,7 @@ This document prevents over-promising during demos and sets clear roadmap expect
 - **Live dashboard** metrics from PostgreSQL via API.  
 - **MVP authentication** (bearer token + role header; not enterprise SSO).  
 - **Approvals** list with approve/reject and audit side effects.  
-- **Integrations registry** with create, delete, status badges, and **mock** test connection.  
+- **Integrations registry** with create, delete, status badges, and **live** test for GitHub/Slack (mock for Asana/Monday/Trello).  
 - **Routing demo** (task intake → route → apply orchestration stub).  
 - **Audit logs** per run ID.  
 - **Reports** panels (credits, adoption, utilization, governance, billing).  
@@ -42,12 +43,14 @@ The following are **planned** capabilities — **not** available in the current 
 
 | Item | Status |
 |------|--------|
-| **OAuth authorization flows** | Not implemented |
+| **GitHub live connector** (PAT test, PR/issue webhooks) | ✅ On `feature/platform-github-slack` — repo webhook needs admin |
+| **Slack live connector** (post messages, thread replies) | ✅ Outbound live + Event Subscriptions enabled |
+| **Webhook receivers** `/webhooks/github`, `/webhooks/slack` | ✅ Implemented |
+| **OAuth authorization flows** | Not implemented — PAT + bot token MVP |
 | **Token refresh and revocation** | Not implemented |
-| **Webhook ingestion** | Not implemented |
-| **Outbound sync jobs** | Not implemented |
 | **Retry / dead-letter queues for integrations** | Not implemented |
-| **Live vendor API calls** | Not implemented — **mock test only** |
+| **Asana / Monday / Trello live APIs** | Not implemented — **mock test only** |
+| **Inbound Slack commands / slash commands** | Not implemented |
 
 ### Runtime orchestration
 
@@ -71,11 +74,12 @@ The following are **planned** capabilities — **not** available in the current 
 
 | Item | Status |
 |------|--------|
-| **Plane CE pm-bridge** (sync + webhooks) | ✅ On `feature/plane-pm-integration` only |
-| **PM status in admin UI** | Not implemented — API/DB fields exist |
+| **Plane CE pm-bridge** (sync + webhooks) | ✅ |
+| **PM status in admin UI** (`/tasks`, ✈ badge) | ✅ |
+| **Platform GitHub / Slack hub** (not Plane Commercial) | ✅ MVP — GitHub repo webhook pending admin |
 | **Full PM layer in-platform** (no external tool) | Not implemented — Plane is external |
 | **End-user delivery application** | Not implemented |
-| **Plane GitHub / Slack native integrations** | Not configured yet |
+| **Plane native GitHub / Slack** (Commercial Silo) | Not used — built in platform instead |
 
 ### Security and compliance (production-grade)
 
@@ -102,13 +106,14 @@ The following are **planned** capabilities — **not** available in the current 
 
 ## MVP-Specific Caveats (Say These in Demos)
 
-1. **Integrations:** “Test connection” uses a **mock connector** — it proves registry and workflow, not live Asana/GitHub/Slack sync.  
+1. **Integrations:** GitHub and Slack use **live** API tests and real notifications; Asana/Monday/Trello remain **mock**. GitHub repo webhook requires **repo admin**; Slack Event Subscriptions are enabled (`app_mention` inbound stub only).  
 2. **Auth:** Anyone with the demo token can sign in as any role — not production security.  
 3. **Routing:** Rule-based agent pick — not a full autonomous orchestrator with queues.  
 4. **Approvals:** Workflow is approve/reject on a record — not multi-step SLA escalation.  
 5. **Reports:** Data is real from DB but not full BI/charting/export suite.  
 6. **Deployment:** EC2 demo requires security group ports **3000**, **3001**, and **8083** (Plane) open. Ports **5432** and **6379** must NOT be open to `0.0.0.0/0` — see `docs/ec2-security.md`.  
-7. **PM (Plane branch):** Tasks sync to Plane as work items; PM UI is a **separate app** at `:8083`, not embedded in the admin UI yet.  
+7. **PM (Plane):** Tasks sync to Plane as work items; PM UI is a **separate app** at `:8083`, not embedded in the admin UI yet.  
+8. **GitHub/Slack:** Platform posts to Slack on route/status change; GitHub PR webhooks update tasks when branch/title includes `task-{id}`. Real GitHub delivery waits on repo webhook registration by an admin.  
 
 ---
 
@@ -118,7 +123,7 @@ The following are **planned** capabilities — **not** available in the current 
 |-----------|------------------|------------------------|
 | Control plane UI | ✅ Demo-ready | ✅ + end-user app |
 | Governance | ✅ Registry + approvals MVP | ✅ Full policy + scanner |
-| Integrations | ✅ Registry + mock test | ✅ OAuth + webhooks + sync |
+| Integrations | ✅ Registry + live GitHub/Slack MVP | ✅ OAuth + full vendor sync |
 | Auth | ⚠️ Token only | ✅ SSO + RBAC |
 | Orchestration | ⚠️ Routing demo | ✅ Workers + SLA |
 | PM / RAG | ⚠️ Plane bridge on feature branch | ✅ Full in-platform or embedded |
@@ -137,6 +142,9 @@ Estimate from sprint planning: **~75% MVP demo readiness**; **~35–40%** of ful
 - [memory/3rd_June.md](../memory/3rd_June.md) — MVP sprint history  
 - [memory/10th_June.md](../memory/10th_June.md) — Plane PM integration spike  
 - [plane-integration.md](plane-integration.md) — pm-bridge setup and API  
+- [integration-github.md](integration-github.md) — GitHub webhook + sync  
+- [integration-slack.md](integration-slack.md) — Slack notifications + Events API  
+- [memory/12th_June.md](../memory/12th_June.md) — GitHub/Slack sprint log  
 
 ---
 

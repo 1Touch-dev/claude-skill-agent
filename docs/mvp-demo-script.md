@@ -16,7 +16,7 @@
 - [ ] Optional: seed a **pending approval** if you want live Approve/Reject buttons  
 
 **Opening line:**  
-“This is our Enterprise Claude Skills **control plane** — how we govern AI skills, agents, approvals, and integrations across customers and workspaces. This MVP is live on our EC2 environment; integrations use mock validation until we connect production OAuth.”
+“This is our Enterprise Claude Skills **control plane** — how we govern AI skills, agents, approvals, and integrations across customers and workspaces. GitHub and Slack are **live** on this branch; we route tasks to Plane and notify Slack automatically.”
 
 ---
 
@@ -64,20 +64,22 @@
 
 ---
 
-## Minute 3 — Integrations
+## Minute 3 — Integrations + live sync
 
 **Actions**
 
 1. Click **Integrations**.  
 2. Point at seeded connectors: Asana, Monday, GitHub, Slack.  
-3. Click **Test** on one row (e.g. GitHub).  
-4. Show status badge and success message (mock connector OK).
+3. Click **Test** on **GitHub** — show `mode: live` in response.  
+4. Click **Test** on **Slack** — same.  
+5. Optional: open **Routing Demo** → create task → **Route & Apply** → show Slack message in `#server-alerts` and ✈ badge on **Tasks**.
 
 **Talking points**
 
-- “We maintain an integration **registry** per workspace — status, credentials flag, health check.”  
-- “Test connection proves the workflow; production will use real OAuth and sync.”  
-- “We are honest: this MVP validates the control plane, not live vendor APIs yet.”
+- “GitHub and Slack use **live** API connections — not mock.”  
+- “Route a task → Slack notification + Plane work item in one action.”  
+- “GitHub PRs with `task-{id}` in the branch update task status and sync to Plane.”  
+- “Asana/Monday/Trello remain registry-only until OAuth phase.”
 
 **Expected outcomes**
 
