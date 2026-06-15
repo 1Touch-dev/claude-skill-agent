@@ -2,7 +2,79 @@
 
 **Audience:** Business users, managers, and stakeholders (non-technical)  
 **MVP demo environment:** http://54.167.31.169:3001  
-**Last updated:** June 12, 2026
+**Last updated:** June 12, 2026 (evening — live browser verification)
+
+---
+
+## Integration hub — what’s wired and where to see it
+
+The platform is the **hub** between GitHub, Slack, and Plane CE. Most of today’s work runs **automatically in the backend** when you use **Routing Demo**; only **Plane** has rich visibility inside this admin UI today.
+
+### At a glance
+
+| System | Wired & working? | Where you see it in **Enterprise Claude Skills** (`:3001`) | Where you see it outside the UI |
+|--------|------------------|----------------------------------------------------------|-----------------------------------|
+| **Plane CE** | ✅ Yes | **Tasks** (✈ badge), **Routing Demo**, **Agents** (Plane member dropdown), **Open Plane ↗** link | Plane board at http://54.167.31.169:8083 |
+| **Slack** (outbound) | ✅ Yes | **Integrations** → Slack → **Test** (`connected`, live API) | Message in Kyma **#server-alerts** after Route & Apply |
+| **Slack** (inbound events) | ⏳ Logged only | Not shown in UI yet | Slack app Event Subscriptions configured (`app_mention`) |
+| **GitHub** (API) | ✅ Yes | **Integrations** → GitHub → **Test** (`connected`, live API) | — |
+| **GitHub** (PR webhooks) | ⏳ Backend ready | **Not shown in UI** (no PR badge on Tasks yet) | Needs repo webhook by admin on GitHub |
+| **Asana / Monday / Trello** | Mock only | **Integrations** → Test returns mock OK | — |
+
+```mermaid
+flowchart LR
+  subgraph UI["Admin UI :3001"]
+    RD[Routing Demo]
+    TK[Tasks]
+    IN[Integrations]
+    AG[Agents]
+  end
+  subgraph API["Platform API :3000"]
+    WH[Webhooks]
+  end
+  RD -->|Route and Apply| API
+  API -->|work item| PL[Plane :8083]
+  API -->|postMessage| SL[Slack #server-alerts]
+  GH[GitHub] -.->|webhook pending admin| WH
+  SL -.->|app_mention events| WH
+  TK -->|plane badge| PL
+  IN -->|Test connection| API
+  AG -->|member map| PL
+```
+
+### Menu-by-menu guide
+
+| Menu | Plane | Slack | GitHub |
+|------|-------|-------|--------|
+| **Dashboard** | Indirect (task/run counts) | Indirect (integrations count) | Indirect |
+| **Integrations** | — | ✅ Live **Test** → `slack: connected — live Slack API OK` | ✅ Live **Test** → `github: connected — live GitHub API OK` |
+| **Routing Demo** | ✅ ✈ badge after Route & Apply | ✅ Triggers Slack post (check `#server-alerts`) | — |
+| **Tasks** | ✅ **19/19 synced**, ✈ # links to Plane issue | Not shown (no Slack column yet) | Not shown (no PR column yet) |
+| **Agents** | ✅ **Plane Member** dropdown maps agent → Plane assignee | — | — |
+| **Runs** | Run records from routing | — | — |
+
+### What is **not** in the UI yet (honest MVP)
+
+- No **GitHub PR** or **Slack thread** links on the Tasks table (data is stored in the database; UI badges are deferred).
+- No **inbound Slack command** handling — events are received and logged, not acted on.
+- **GitHub repo webhook** must be added by a repo admin on GitHub.com (not in this UI).
+
+### Live verification (June 12, 2026)
+
+Tested in the browser at http://54.167.31.169:3001 and via `scripts/test-integrations.sh`:
+
+| Test | Result |
+|------|--------|
+| Integrations → GitHub **Test** | ✅ `Authenticated as Abhishek9302 — live GitHub API OK` |
+| Integrations → Slack **Test** | ✅ `Authenticated as globex_platform — live Slack API OK` |
+| Routing Demo → create + **Route & Apply** task #19 | ✅ Routed to Globex Agent; Plane ✈ **#23**; Slack message sent to `#server-alerts` |
+| Tasks page | ✅ **19/19** synced to Plane |
+| Agents → Plane Member mapping | ✅ Dropdown populated (Admin) |
+| API script `test-integrations.sh` | ✅ **6/6 PASS** |
+
+**To confirm Slack:** open the Kyma Slack workspace → channel **#server-alerts** → look for the “task routed” message for *Jun12 live integration test task*.
+
+**To confirm Plane:** on **Tasks**, click **✈ #23 Open in Plane →** or use **Open Plane ↗** (top right).
 
 ---
 
@@ -167,11 +239,32 @@ These screens support **multi-tenant operations** and future billing models.
 
 ---
 
+## Tasks
+
+**Menu:** Tasks
+
+Lists every **task intake** with **PM sync status** to Plane CE.
+
+| Element | Meaning |
+|---------|---------|
+| **✈ #N** badge | Task synced to Plane work item sequence #N — click to open in Plane |
+| **Open Plane ↗** | Opens the Plane project board in a new tab |
+| **Synced (N)** filter | How many tasks have a Plane work item |
+| **Refresh** | Reload task list from API |
+
+This is the **primary place to see Plane integration** in the admin UI. GitHub and Slack side effects are not shown as columns here yet (June 2026 MVP).
+
+---
+
 ## Agents
 
 **Menu:** Agents
 
 An **agent** is a configured executor: which workspace it belongs to, which skills it may run, and its **autonomy level** (how much it can do without human oversight).
+
+| Column | Purpose |
+|--------|---------|
+| **Plane Member** | Maps each agent to a Plane workspace member so routed work items are **auto-assigned** in Plane |
 
 Agents do not “think” inside this UI — the platform **governs and routes** work to them. Execution is represented by **runs** and **routing demo** flows.
 
@@ -204,27 +297,33 @@ In demo, if no pending items appear, an operator can seed a pending approval (te
 
 **Menu:** Integrations
 
-The **integration registry** lists external systems (Asana, GitHub, Slack, Monday, Trello).
+The **integration registry** lists external systems (Asana, GitHub, Slack, Monday, Trello). This is the **primary place to verify GitHub and Slack are live** in the UI.
 
 | Feature | Description |
 |---------|-------------|
-| **Status** | connected, disconnected, error (visual badges). |
-| **Test connection** | **GitHub** and **Slack** call real APIs (`mode: live`). Asana/Monday/Trello use mock validation. |
-| **Create / delete** | Register or remove a connector record for a workspace. |
+| **Status** | `connected` / `error` badges per row |
+| **Test connection** | **GitHub** and **Slack** call real APIs — success message shows `live … API OK`. Asana/Monday/Trello use mock validation. |
+| **Create / delete** | Register or remove a connector record for a workspace |
 
-### GitHub + Slack (June 2026)
+**How to demo live connectors (30 seconds):**
+
+1. Open **Integrations**.
+2. Find row **github** → click **Test** → expect green message: `github: connected — … live GitHub API OK`.
+3. Find row **slack** → click **Test** → expect: `slack: connected — … live Slack API OK`.
+
+### GitHub + Slack + Plane (June 2026)
 
 Our platform is the **hub** — not Plane Commercial:
 
-| System | What happens automatically |
-|--------|---------------------------|
-| **Slack** | When you **Route & Apply** a task, a message appears in the team channel with task title, agent, and Plane link. Status changes (Plane or GitHub) post **thread replies**. |
-| **GitHub** | When a PR is opened or merged and the branch/title includes `task-{id}`, the platform task status updates and Plane syncs. Requires repo webhook (admin setup). |
-| **Plane** | Work items still sync as before; dragging cards in Plane updates our task status. |
+| System | What happens automatically | Where to see it |
+|--------|---------------------------|-----------------|
+| **Plane** | Work item created on Route & Apply; status syncs both ways via webhooks | **Tasks** ✈ badge, **Routing Demo**, Plane UI `:8083` |
+| **Slack** | Message on Route & Apply; thread replies on Plane/GitHub status changes | **#server-alerts** in Slack (not in Tasks table yet) |
+| **GitHub** | PR/issue webhooks update task + Plane when branch/title has `task-{id}` | Backend only until repo webhook registered; no Tasks UI badge yet |
 
 **Technical setup:** [integration-github.md](integration-github.md) · [integration-slack.md](integration-slack.md)
 
-> **Stakeholder note:** GitHub repo webhook registration requires **repo admin** (James). Slack outbound notifications and Event Subscriptions are configured; inbound `@mention` events are logged but not yet acted on.
+> **Stakeholder note:** GitHub repo webhook registration requires **repo admin** (James). Slack outbound + Event Subscriptions are configured; inbound `@mention` events are logged but not yet acted on.
 
 ---
 
@@ -232,12 +331,15 @@ Our platform is the **hub** — not Plane Commercial:
 
 **Menu:** Routing Demo
 
-Shows how work enters the platform and gets **routed to an agent**:
+The **main demo flow** for Plane + Slack. Shows how work enters the platform and gets **routed to an agent**:
 
-1. **Create task** — title, workspace, skill key (e.g. `mkt_campaign_brief` for marketing).
-2. **Route & apply** — engine picks an agent and creates orchestration records.
-3. **Result** — confirms which agent was selected; run/orchestration data is persisted.
-4. **Side effects** (when configured): Plane work item created (✈ badge on **Tasks** page); Slack notification in `#server-alerts`.
+1. **Create task** — title, workspace **2**, skill key `mkt_campaign_brief`.
+2. **Route & Apply** on the new row — engine picks an agent (e.g. **Globex Agent**).
+3. **Result panel** — JSON with `route` and `applied` (run created).
+4. **Automatic side effects:**
+   - **Plane** — ✈ badge appears in Recent Tasks (e.g. `✈ #23`) within ~2 seconds.
+   - **Slack** — post to **#server-alerts** (open Slack app to verify).
+   - **Runs** — new skill run record.
 
 Use skill keys that match agent permissions (demo: `mkt_campaign_brief` on workspace 2).
 
@@ -299,34 +401,43 @@ Use skill keys that match agent permissions (demo: `mkt_campaign_brief` on works
 - Open **Suites** → find **Marketing Suite**.  
 - Open **Agents** → **Globex Agent** (workspace 2) includes `mkt_campaign_brief`.
 
-### Step 5 — Routing Demo
+### Step 5 — Verify integrations (GitHub + Slack)
+
+1. Open **Integrations**.  
+2. Click **Test** on **GitHub** and **Slack** — both should show `connected` with live API messages.  
+3. Tell stakeholders: Asana/Monday/Trello rows are mock in MVP.
+
+### Step 6 — Routing Demo (Plane + Slack)
 
 1. Open **Routing Demo**.  
 2. Set workspace **2**, title e.g. “Q3 Product Launch Campaign Brief”.  
 3. Skill key: `mkt_campaign_brief`.  
 4. Click **Create Task**.  
 5. Click **Route & Apply** on the new task.  
-6. Confirm success message and **Last Routing Result** (agent name shown).
+6. Confirm success message and **Last Routing Result** (agent name shown).  
+7. Note the **✈ #N** badge in Recent Tasks.  
+8. Open **Tasks** — confirm the task appears with Plane link.  
+9. *(Optional)* Open Slack **#server-alerts** — confirm routed-task message.
 
-### Step 6 — Verify run created
+### Step 7 — Verify run created
 
 1. Open **Runs**.  
 2. Find the new or updated run / task evidence.  
 3. Note state (e.g. queued, approved, succeeded).
 
-### Step 7 — Audit trail
+### Step 8 — Audit trail
 
 1. Open **Audit Logs**.  
 2. Enter the **Run ID** from Runs.  
 3. Click **Load** — see approval and execution events.
 
-### Step 8 — Reports
+### Step 9 — Reports
 
 1. Open **Reports**.  
 2. Review **Platform snapshot** and **Skills by lifecycle**.  
 3. Point out governance and credit panels for executives.
 
-**Outcome for James:** In five minutes you have shown **governance (skills) → operations (routing) → compliance (audit) → executive visibility (reports)**.
+**Outcome for James:** In five minutes you have shown **governance (skills) → live integrations (GitHub/Slack test) → operations (routing + Plane + Slack) → compliance (audit) → executive visibility (reports)**.
 
 ---
 

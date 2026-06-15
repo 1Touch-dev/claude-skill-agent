@@ -89,8 +89,8 @@ export default function Integrations() {
       <div className="page__header">
         <h2>Integrations</h2>
         <p>
-          MVP demonstration layer for Asana, GitHub, and Slack. Test actions use a mock connector
-          (not production OAuth).
+          External connector registry. <strong>GitHub</strong> and <strong>Slack</strong> use live API
+          tests (<code>mode: live</code>); Asana, Monday, and Trello use mock validation in MVP.
         </p>
       </div>
       {err && <div className="status status--error">{err}</div>}

@@ -15,6 +15,7 @@
 | GitHub + Slack | **Build in our platform** — not Plane Commercial (~$6/seat/mo) |
 | Architecture | **Platform = hub** — GitHub/Slack ↔ platform ↔ Plane CE via pm-bridge |
 | Merge to `main` | **Still blocked** until James explicitly approves |
+| **Architecture (Jun 12 PM)** | ✅ James: *“We would do it with our architecture”* — see [15th_June.md](15th_June.md) |
 
 **Why:** Plane CE reports `edition: PLANE_COMMUNITY`, `is_github_enabled: false`, `slack_client_id: null`. Native GitHub/Slack require Plane Commercial + Silo. Our pm-bridge already syncs tasks ↔ Plane work items; we extended the same pattern for GitHub and Slack in the platform.
 
@@ -204,6 +205,7 @@ Full steps: [docs/integration-github.md](../docs/integration-github.md)
 
 ## Related docs
 
+- [15th_June.md](15th_June.md) — James approval + E2E verification (Jun 15)  
 - [11th_June.md](11th_June.md) — Plane operationalization complete  
 - [docs/integration-github.md](../docs/integration-github.md) — GitHub setup + sync flow  
 - [docs/integration-slack.md](../docs/integration-slack.md) — Slack setup + notifications  

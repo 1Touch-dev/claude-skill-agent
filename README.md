@@ -236,6 +236,7 @@ bash scripts/audit-ec2-security.sh
 
 | Document | Purpose |
 |----------|---------|
+| [memory/15th_June.md](memory/15th_June.md) | **Jun 15** — James approval + E2E verification |
 | [memory/12th_June.md](memory/12th_June.md) | **GitHub + Slack** platform hub sprint |
 | [memory/10th_June.md](memory/10th_June.md) | **Plane PM integration** — spike, tests, webhook |
 | [memory/3rd_June.md](memory/3rd_June.md) | MVP completion sprint |
