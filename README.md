@@ -2,8 +2,9 @@
 
 A multi-tenant **AI control plane** for governing Claude skills, agents, department suites, industry overlays, licensing, metering, approvals, audit, and integrations across enterprise workspaces.
 
-> **Current branch:** `feature/platform-github-slack` (June 2026)  
-> Adds **Plane CE** pm-bridge + **live GitHub/Slack** integrations (platform hub, not Plane Commercial).  
+> **Current branch:** `feature/github-poller` (June 2026)  
+> Adds **EC2 GitHub Poller** — polls GitHub PRs/issues every 2 min and feeds them through the same webhook handler. Interim solution while repo-admin webhook access is pending.  
+> Built on `feature/platform-github-slack` which added Plane CE + live GitHub/Slack integrations.  
 > **Do not merge to `main` yet** — awaiting James approval.
 
 ---
@@ -100,11 +101,13 @@ Detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Plane: [docs/plane-integ
 | Live GitHub/Slack connection test | ✅ |
 | Slack notify on route + status change | ✅ |
 | Slack Event Subscriptions (`app_mention`) | ✅ |
-| GitHub webhook → task + Plane + Slack | ✅ (repo webhook needs admin) |
+| **EC2 GitHub Poller** (interim) | ✅ **LIVE** — polls every 2 min, task+Plane+Slack sync |
+| GitHub webhook → task + Plane + Slack (native) | ⏳ admin access required to register webhook |
 | Webhook receivers `/webhooks/github`, `/webhooks/slack` | ✅ |
 | Integration test script | ✅ `scripts/test-integrations.sh` |
+| Poller E2E test script | ✅ `scripts/test-github-poller.sh` (8/8 pass) |
 
-Guides: [docs/integration-github.md](docs/integration-github.md) · [docs/integration-slack.md](docs/integration-slack.md)
+Guides: [docs/integration-github.md](docs/integration-github.md) · [docs/integration-slack.md](docs/integration-slack.md) · [docs/github_poller.md](docs/github_poller.md)
 
 MVP boundaries: [docs/mvp-known-limitations.md](docs/mvp-known-limitations.md)
 
@@ -227,7 +230,9 @@ bash scripts/audit-ec2-security.sh
 | [docs/user-guide.md](docs/user-guide.md) | Non-technical guide |
 | [docs/mvp-demo-script.md](docs/mvp-demo-script.md) | 5-minute executive demo |
 | [docs/plane-integration.md](docs/plane-integration.md) | **Plane CE pm-bridge** — setup, API, webhooks |
-| [docs/integration-github.md](docs/integration-github.md) | **GitHub** webhook + PR sync |
+| [docs/integration-github.md](integration-github.md) | **GitHub** webhook + PR sync |
+| [docs/github_webhooks.md](docs/github_webhooks.md) | **GitHub webhooks** — full state & return path from poller to native webhook |
+| [docs/github_poller.md](docs/github_poller.md) | **GitHub Poller** — interim EC2 polling job (LIVE) |
 | [docs/integration-slack.md](docs/integration-slack.md) | **Slack** notifications + Events API |
 | [docs/pm-platform-feasibility-study.md](docs/pm-platform-feasibility-study.md) | Worksuite vs Taskly vs Plane decision |
 | [docs/mvp-known-limitations.md](docs/mvp-known-limitations.md) | Honest MVP boundaries |

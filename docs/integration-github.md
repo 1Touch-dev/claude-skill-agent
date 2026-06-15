@@ -2,7 +2,7 @@
 
 **Branch:** `feature/platform-github-slack`  
 **Status:** Live connector + webhook receiver implemented; **repo webhook registration pending repo admin**  
-**Related:** [integration-slack.md](integration-slack.md) · [plane-integration.md](plane-integration.md) · [12th_June.md](../memory/12th_June.md)
+**Related:** [integration-slack.md](integration-slack.md) · [github_webhooks.md](github_webhooks.md) (canonical webhook state & return path) · [plane-integration.md](plane-integration.md) · [12th_June.md](../memory/12th_June.md)
 
 ---
 

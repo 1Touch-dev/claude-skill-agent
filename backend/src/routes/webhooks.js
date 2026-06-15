@@ -183,6 +183,9 @@ async function handleIssueDeleted(planeIssueId) {
    GitHub webhook — POST /webhooks/github
    Verifies X-Hub-Signature-256 HMAC, then handles PR and issue events.
    Link tasks via branch name pattern `task-{id}` or title tag `[T-{id}]`.
+
+   The core event-processing logic lives in processGitHubEvent() which is
+   also exported for use by the GitHub poller (backend/src/jobs/github-poller.js).
 ═══════════════════════════════════════════════════════════════════ */
 
 function verifyGitHubSignature(rawBody, sigHeader) {
@@ -234,23 +237,35 @@ router.post('/github', express.raw({ type: 'application/json' }), async (req, re
   // Handle async in background — never block response
   setImmediate(async () => {
     try {
-      await handleGitHubEvent(event, payload, deliveryId);
+      await processGitHubEvent(event, payload, deliveryId, 'webhook');
     } catch (e) {
       console.error('[webhooks/github] handler error:', e.message);
     }
   });
 });
 
-async function handleGitHubEvent(event, payload, deliveryId) {
+/**
+ * processGitHubEvent — shared core handler for GitHub PR/issue events.
+ * Called from:
+ *   - POST /webhooks/github  (source = 'webhook')
+ *   - github-poller.js       (source = 'poll')
+ *
+ * @param {string} event      'pull_request' | 'issues'
+ * @param {object} payload    GitHub event payload object
+ * @param {string|null} deliveryId  GitHub delivery ID (or poll-generated id)
+ * @param {string} source     'webhook' | 'poll' — for log attribution
+ */
+async function processGitHubEvent(event, payload, deliveryId, source) {
+  source = source || 'webhook';
   const pr = payload.pull_request;
   const issue = payload.issue;
   const action = payload.action;
 
   // Determine task ID from PR title, body, or branch name
   let taskId = null;
-  let searchTexts = [];
-  if (pr) searchTexts = [pr.title, pr.body, pr.head?.ref];
-  else if (issue) searchTexts = [issue.title, issue.body];
+  const searchTexts = [];
+  if (pr) searchTexts.push(pr.title, pr.body, pr.head?.ref);
+  else if (issue) searchTexts.push(issue.title, issue.body);
   for (const t of searchTexts) {
     taskId = extractTaskIdFromText(t);
     if (taskId) break;
@@ -262,7 +277,7 @@ async function handleGitHubEvent(event, payload, deliveryId) {
   if (event === 'pull_request') {
     if (action === 'opened' || action === 'reopened') newStatus = 'running';
     if (action === 'closed' && pr?.merged) newStatus = 'completed';
-    if (action === 'closed' && !pr?.merged) newStatus = null; // closed without merge — leave as-is
+    // closed without merge — leave status unchanged
     logEvent = `pr.${action}`;
   } else if (event === 'issues') {
     if (action === 'opened') newStatus = 'queued';
@@ -270,18 +285,21 @@ async function handleGitHubEvent(event, payload, deliveryId) {
     logEvent = `issue.${action}`;
   }
 
-  // Log to integration_events
+  // Log to integration_events (dedup key prevents double-insert from poller re-runs)
+  const dedupKey = `${source}:${deliveryId || `${event}:${pr?.id || issue?.id}:${action}`}`;
   if (taskId) {
     await q(
-      `INSERT INTO integration_events(provider, event_type, external_id, task_id, payload)
-       VALUES ('github', $1, $2, $3, $4)`,
-      [logEvent, deliveryId, taskId, payload]
+      `INSERT INTO integration_events(provider, event_type, external_id, task_id, payload, status)
+       VALUES ('github', $1, $2, $3, $4, 'ok')
+       ON CONFLICT (provider, external_id) DO NOTHING`,
+      [logEvent, dedupKey, taskId, payload]
     );
   } else {
     await q(
       `INSERT INTO integration_events(provider, event_type, external_id, task_id, payload, status)
-       VALUES ('github', $1, $2, NULL, $3, 'skipped')`,
-      [logEvent, deliveryId, payload]
+       VALUES ('github', $1, $2, NULL, $3, 'skipped')
+       ON CONFLICT (provider, external_id) DO NOTHING`,
+      [logEvent, dedupKey, payload]
     );
   }
 
@@ -296,8 +314,8 @@ async function handleGitHubEvent(event, payload, deliveryId) {
     await q('UPDATE task_intake SET status=$1 WHERE id=$2', [newStatus, taskId]);
     await q(
       `INSERT INTO task_routes(task_id, reason, manual, decided_by)
-       VALUES ($1, $2, false, 'github_webhook')`,
-      [taskId, `github:${logEvent}→${newStatus}`]
+       VALUES ($1, $2, false, $3)`,
+      [taskId, `github:${logEvent}→${newStatus}`, `github_${source}`]
     );
 
     // Update GitHub fields on task
@@ -313,6 +331,8 @@ async function handleGitHubEvent(event, payload, deliveryId) {
       );
     }
 
+    console.log(`[github:${source}] task #${taskId} → ${newStatus} (${logEvent})`);
+
     // Sync to Plane if task has a plane issue
     if (task.plane_issue_id) {
       try {
@@ -326,7 +346,7 @@ async function handleGitHubEvent(event, payload, deliveryId) {
           }
         }
       } catch (e) {
-        console.error('[webhooks/github] plane sync error:', e.message);
+        console.error(`[github:${source}] plane sync error:`, e.message);
       }
     }
 
@@ -344,7 +364,7 @@ async function handleGitHubEvent(event, payload, deliveryId) {
           await slack.postMessage(null, text, blocks);
         }
       } catch (e) {
-        console.error('[webhooks/github] slack notify error:', e.message);
+        console.error(`[github:${source}] slack notify error:`, e.message);
       }
     }
   }
@@ -408,3 +428,5 @@ router.post('/slack', express.raw({ type: 'application/json' }), async (req, res
   });
 });
 module.exports = router;
+module.exports.processGitHubEvent = processGitHubEvent;
+module.exports.extractTaskIdFromText = extractTaskIdFromText;

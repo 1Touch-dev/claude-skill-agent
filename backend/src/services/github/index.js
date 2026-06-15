@@ -114,7 +114,7 @@ async function closeIssue(issueNumber, repo) {
 }
 
 /**
- * List open PRs for a repo.
+ * List open PRs for a repo (legacy helper — simple version).
  */
 async function listPRs(repo) {
   if (!isEnabled()) return { ok: false, error: 'github_disabled' };
@@ -122,6 +122,44 @@ async function listPRs(repo) {
   const r = await githubRequest('GET', `/repos/${target}/pulls?state=open&per_page=20`);
   if (r.ok) return { ok: true, prs: (r.data || []).map(p => ({ number: p.number, title: p.title, html_url: p.html_url, state: p.state })) };
   return { ok: false, error: r.error };
+}
+
+/**
+ * List pull requests with full query params (used by poller).
+ * @param {string} repo  "owner/repo"
+ * @param {{ state, per_page, sort, direction }} opts
+ */
+async function listPullRequests(repo, opts = {}) {
+  if (!isEnabled()) return { ok: false, error: 'github_disabled' };
+  const target = repo || cfg.defaultRepo;
+  if (!target) return { ok: false, error: 'no_repo_configured' };
+  const qs = new URLSearchParams({
+    state: opts.state || 'all',
+    per_page: String(opts.per_page || 100),
+    sort: opts.sort || 'updated',
+    direction: opts.direction || 'desc',
+  }).toString();
+  const r = await githubRequest('GET', `/repos/${target}/pulls?${qs}`);
+  return r.ok ? { ok: true, data: r.data } : { ok: false, error: r.error };
+}
+
+/**
+ * List issues (and PRs — caller should filter by absence of pull_request key).
+ * @param {string} repo  "owner/repo"
+ * @param {{ state, per_page, sort, direction }} opts
+ */
+async function listIssues(repo, opts = {}) {
+  if (!isEnabled()) return { ok: false, error: 'github_disabled' };
+  const target = repo || cfg.defaultRepo;
+  if (!target) return { ok: false, error: 'no_repo_configured' };
+  const qs = new URLSearchParams({
+    state: opts.state || 'all',
+    per_page: String(opts.per_page || 100),
+    sort: opts.sort || 'updated',
+    direction: opts.direction || 'desc',
+  }).toString();
+  const r = await githubRequest('GET', `/repos/${target}/issues?${qs}`);
+  return r.ok ? { ok: true, data: r.data } : { ok: false, error: r.error };
 }
 
 /**
@@ -141,6 +179,8 @@ module.exports = {
   createIssue,
   closeIssue,
   listPRs,
+  listPullRequests,
+  listIssues,
   addComment,
   cfg,
 };
