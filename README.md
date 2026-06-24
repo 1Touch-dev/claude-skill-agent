@@ -20,7 +20,39 @@ This is **not** a task manager or a prompt library. It is an enterprise **govern
 - **Meter usage** through skill credits and subscription tiers  
 - Enforce **approvals**, **audit logging**, and **integration registry** workflows  
 - **(Plane branch)** Sync routed tasks to **Plane CE** work items and receive status updates via webhooks  
-- **(Integrations branch)** Live **GitHub** PR/issue webhooks and **Slack** notifications — platform as integration hub  
+- **(Integrations branch)** Live **GitHub** PR/issue sync (EC2 poller + webhook handler) and **Slack** notifications — platform as integration hub  
+
+---
+
+## Integration hub status (Jun 15, 2026)
+
+James approved: **Plane CE for PM + GitHub/Slack in our platform** (not Plane Commercial).
+
+**Overall: ~93% complete** for the approved integration scope (6/6 features done; ~7% gap = GitHub poller delay vs instant webhook).
+
+### Done
+
+- Plane CE pm-bridge — workspace/task sync, webhooks, 12/12 E2E tests
+- GitHub outbound — live PAT connection test, issue/PR API
+- GitHub inbound — EC2 poller live (every 2 min), PR/issue → task → Plane → Slack
+- Slack outbound — route + status notifications to `#server-alerts`
+- Slack inbound — Event Subscriptions enabled (`app_mention`); events logged
+- Webhook receivers — `/webhooks/plane`, `/webhooks/github`, `/webhooks/slack`
+- Admin UI — Dashboard, Integrations, Routing Demo, Tasks (Plane badges), Agents (Plane member map)
+- E2E verified on EC2 — integrations 6/6, PM 12/12, poller 8/8
+
+### Pending / upcoming
+
+| Item | Owner | Notes |
+|------|-------|-------|
+| Native GitHub repo webhook | James / repo admin | Optional; 5 min when admin access available; then set `GITHUB_POLL_ENABLED=false` |
+| Merge `feature/github-poller` → `main` | James approval | Branch ready on GitHub |
+| Tasks UI: GitHub PR / Slack thread badges | Phase 5 | Data in DB; UI not shown yet |
+| Inbound Slack bot commands | Future | Events logged only today |
+| HTTPS / custom domain | P2 infra | HTTP demo on EC2 today |
+| OAuth (GitHub App / Slack) | Deferred | PAT + bot token sufficient for MVP |
+
+Sprint log: [memory/15th_June.md](memory/15th_June.md)
 
 **Live demo (EC2):**
 
@@ -47,7 +79,8 @@ flowchart LR
   API --> DB
   API --> RD
   API <-->|REST + webhooks| PM
-  GH[GitHub] -->|webhooks| API
+  GH[GitHub] -->|REST poll 2min| API
+  GH -.->|webhook when admin| API
   API -->|Web API| SL[Slack]
 ```
 
@@ -125,7 +158,7 @@ MVP boundaries: [docs/mvp-known-limitations.md](docs/mvp-known-limitations.md)
 ```bash
 git clone https://github.com/1Touch-dev/claude-skill-agent.git
 cd claude-skill-agent
-git checkout feature/plane-pm-integration
+git checkout feature/github-poller
 cp .env.example .env
 # EC2: set PUBLIC_API_URL, PUBLIC_UI_URL, and PLANE_* vars (see plane-integration.md)
 docker compose up -d --build
@@ -159,7 +192,7 @@ Full guide: [docs/plane-integration.md](docs/plane-integration.md)
 ### Keep running after you disconnect (EC2)
 
 ```bash
-git pull origin feature/plane-pm-integration
+git pull origin feature/github-poller
 docker compose up -d --build
 docker compose -f docker-compose-plane.yml up -d
 ```
@@ -241,7 +274,7 @@ bash scripts/audit-ec2-security.sh
 
 | Document | Purpose |
 |----------|---------|
-| [memory/15th_June.md](memory/15th_June.md) | **Jun 15** — James approval + E2E verification |
+| [memory/15th_June.md](memory/15th_June.md) | **Jun 15** — James approval, GitHub poller, E2E verification |
 | [memory/12th_June.md](memory/12th_June.md) | **GitHub + Slack** platform hub sprint |
 | [memory/10th_June.md](memory/10th_June.md) | **Plane PM integration** — spike, tests, webhook |
 | [memory/3rd_June.md](memory/3rd_June.md) | MVP completion sprint |
@@ -268,15 +301,17 @@ claude-skill-agent/
 │   ├── src/services/github/      # GitHub API client
 │   ├── src/services/slack/       # Slack Web API client
 │   ├── src/routes/pm.js          # /api/pm/*
-│   ├── src/routes/webhooks.js    # /webhooks/plane|github|slack
-│   └── db/migrations/0009_pm_bridge.sql, 0011_github_slack_links.sql
+│   ├── src/jobs/github-poller.js # EC2 GitHub poller (interim inbound)
+│   ├── src/routes/webhooks.js    # /webhooks/plane|github|slack + processGitHubEvent
+│   └── db/migrations/0009_pm_bridge.sql, 0011_github_slack_links.sql, 0012_github_poller.sql
 ├── frontend/                     # React admin UI
 ├── docs/                         # Guides, feasibility study, plane-integration
 ├── memory/                       # Sprint logs (10th_June.md = Plane spike)
 ├── scripts/
 │   ├── plane-setup.sh            # Bootstrap Plane CE
 │   ├── test-pm-integration.sh    # 12-test PM e2e suite
-│   └── test-integrations.sh      # GitHub + Slack connector tests
+│   ├── test-integrations.sh      # GitHub + Slack connector tests
+│   └── test-github-poller.sh     # 8-test poller e2e suite
 ├── docker-compose.yml            # Platform stack (+ plane-net)
 └── docker-compose-plane.yml      # Plane CE stack
 ```
@@ -290,6 +325,7 @@ cd backend && npm test
 ./scripts/api-validate.sh
 bash scripts/test-pm-integration.sh http://localhost:3000   # requires Plane + backend
 bash scripts/test-integrations.sh http://localhost:3000    # GitHub + Slack connectors
+bash scripts/test-github-poller.sh http://localhost:3000   # GitHub poller (requires GITHUB_POLL_ENABLED)
 ```
 
 ---
@@ -298,9 +334,10 @@ bash scripts/test-integrations.sh http://localhost:3000    # GitHub + Slack conn
 
 | Branch | Purpose |
 |--------|---------|
-| `main` | Stable MVP baseline — **no Plane merge until approved** |
-| `feature/plane-pm-integration` | Plane CE pm-bridge (merged into integrations branch) |
-| `feature/platform-github-slack` | **Active** — GitHub + Slack hub, Plane bridge |
+| `main` | Stable MVP baseline — **no integration merge until James approves** |
+| `feature/plane-pm-integration` | Plane CE pm-bridge (base) |
+| `feature/platform-github-slack` | GitHub + Slack hub, Plane bridge |
+| `feature/github-poller` | **Active** — EC2 GitHub poller (interim inbound GitHub) |
 
 ---
 
