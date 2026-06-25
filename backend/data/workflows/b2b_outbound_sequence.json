@@ -1,0 +1,31 @@
+{
+  "key": "b2b_outbound_sequence",
+  "name": "B2B Outbound Sequence",
+  "description": "Full outbound pipeline for B2B prospecting. Creates personalised email sequence, LinkedIn messages, and ad copy targeting a specific company profile — routes each to the agent for execution.",
+  "category": "sales",
+  "estimated_credits": 33,
+  "steps": [
+    {
+      "order": 1,
+      "skill_key": "mkt_email_sequence",
+      "title": "Build cold email sequence",
+      "description_template": "5-email cold outreach sequence targeting {target_role} at {target_company_type} companies. Pain point: {pain_point}. Our solution: {solution}.",
+      "auto_route": true
+    },
+    {
+      "order": 2,
+      "skill_key": "mkt_ad_copy",
+      "title": "Create LinkedIn ad copy",
+      "description_template": "LinkedIn ad copy targeting {target_role} at {target_company_type}. Offer: {offer}. CTA: {cta}.",
+      "auto_route": true
+    },
+    {
+      "order": 3,
+      "skill_key": "mkt_competitor_report",
+      "title": "Competitor analysis for prospect deck",
+      "description_template": "Competitor analysis comparing top 5 alternatives to our {solution}. Target industry: {target_company_type}.",
+      "auto_route": true
+    }
+  ],
+  "template_vars": ["target_role", "target_company_type", "pain_point", "solution", "offer", "cta"]
+}

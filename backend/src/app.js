@@ -15,6 +15,9 @@ const integrations = require('./routes/integrations');
 const dashboard = require('./routes/dashboard');
 const pm = require('./routes/pm');
 const webhooks = require('./routes/webhooks');
+const agentApi = require('./routes/agent-api');
+const mcpRoutes = require('./routes/mcp');
+const workflows = require('./routes/workflows');
 const { authenticateRequest, requireRole } = require('./middleware/auth');
 
 function buildApp() {
@@ -26,6 +29,10 @@ function buildApp() {
 
   app.use(express.json());
   app.use('/health', health);
+
+  // Public Agent API — /v1 (API key auth, separate from admin UI)
+  app.use('/v1', agentApi);
+
   app.use('/api', authenticateRequest);
   app.use('/api', (req, res, next) => {
     if (req.method === 'GET') return next();
@@ -44,6 +51,8 @@ function buildApp() {
   app.use('/api', integrations);
   app.use('/api', dashboard);
   app.use('/api', pm);
+  app.use('/api', mcpRoutes);
+  app.use('/api', workflows);
   app.get('/', (_req, res) => res.json({ name: 'Enterprise Claude Skills API', status: 'ok' }));
   return app;
 }

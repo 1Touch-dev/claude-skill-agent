@@ -1,0 +1,31 @@
+{
+  "key": "agency_client_onboarding",
+  "name": "Agency Client Onboarding",
+  "description": "End-to-end onboarding workflow for a new agency client. Generates a campaign brief, SEO content plan, and landing page copy — then routes each deliverable to the assigned agent and notifies via Slack.",
+  "category": "agency",
+  "estimated_credits": 44,
+  "steps": [
+    {
+      "order": 1,
+      "skill_key": "mkt_campaign_brief",
+      "title": "Create campaign brief",
+      "description_template": "Campaign brief for new client: {client_name}. Industry: {industry}. Goal: {goal}.",
+      "auto_route": true
+    },
+    {
+      "order": 2,
+      "skill_key": "mkt_seo_content",
+      "title": "Generate SEO content plan",
+      "description_template": "SEO content plan for {client_name}. Target keywords: {keywords}. Industry: {industry}.",
+      "auto_route": true
+    },
+    {
+      "order": 3,
+      "skill_key": "mkt_landing_copy",
+      "title": "Write landing page copy",
+      "description_template": "Landing page copy for {client_name}. Product/service: {product}. Target audience: {audience}.",
+      "auto_route": true
+    }
+  ],
+  "template_vars": ["client_name", "industry", "goal", "keywords", "product", "audience"]
+}

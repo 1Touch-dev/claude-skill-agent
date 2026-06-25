@@ -1,0 +1,31 @@
+{
+  "key": "seo_content_pipeline",
+  "name": "SEO Content Pipeline",
+  "description": "Full SEO content production pipeline. Starts with a competitor analysis to identify keyword gaps, then produces SEO articles and social posts — all routed to agents and synced to Plane.",
+  "category": "marketing",
+  "estimated_credits": 46,
+  "steps": [
+    {
+      "order": 1,
+      "skill_key": "mkt_competitor_report",
+      "title": "Competitor keyword gap analysis",
+      "description_template": "Competitor analysis for SEO: analyse top 5 competitors for {target_topic}. Identify keyword gaps and content opportunities for {brand_name}.",
+      "auto_route": true
+    },
+    {
+      "order": 2,
+      "skill_key": "mkt_seo_content",
+      "title": "Write primary SEO article",
+      "description_template": "1,200-word SEO article for {brand_name} targeting keyword: {primary_keyword}. Industry: {industry}. Audience: {audience}.",
+      "auto_route": true
+    },
+    {
+      "order": 3,
+      "skill_key": "mkt_social_post",
+      "title": "Social posts to promote content",
+      "description_template": "5 social media posts (LinkedIn + Twitter/X) promoting the SEO article on {primary_keyword} for {brand_name}.",
+      "auto_route": true
+    }
+  ],
+  "template_vars": ["target_topic", "brand_name", "primary_keyword", "industry", "audience"]
+}

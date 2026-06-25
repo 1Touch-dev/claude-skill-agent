@@ -6,7 +6,7 @@
  * Asana, Monday, Trello fall back to credential-profile check (no OAuth yet).
  */
 
-const SUPPORTED = ['asana', 'github', 'slack', 'monday', 'trello'];
+const SUPPORTED = ['asana', 'github', 'slack', 'monday', 'trello', 'zapier_mcp'];
 
 function hasCredential(vault) {
   if (!vault || typeof vault !== 'object') return false;
@@ -85,13 +85,38 @@ function testMock(provider, vault) {
   };
 }
 
+/**
+ * Live Zapier MCP test — calls tools/list on the MCP endpoint.
+ */
+async function testZapierMcp() {
+  const zapier = require('../services/zapier-mcp');
+  const r = await zapier.testConnection();
+  if (r.ok) {
+    return {
+      ok: true,
+      status: 'connected',
+      message: `Zapier MCP connected — ${r.tool_count} tool(s) enabled`,
+      mode: 'live',
+      tool_count: r.tool_count,
+      checked_at: new Date().toISOString(),
+    };
+  }
+  return {
+    ok: false,
+    status: r.mode === 'unconfigured' ? 'disconnected' : 'error',
+    message: `Zapier MCP: ${r.error}`,
+    mode: r.mode === 'unconfigured' ? 'unconfigured' : 'live',
+  };
+}
+
 async function testProvider(provider, vault) {
   const p = String(provider || '').toLowerCase();
   if (!SUPPORTED.includes(p)) {
     return { ok: false, status: 'error', message: `Unsupported provider: ${provider}`, mode: 'live' };
   }
-  if (p === 'github') return testGitHub(vault);
-  if (p === 'slack')  return testSlack(vault);
+  if (p === 'github')     return testGitHub(vault);
+  if (p === 'slack')      return testSlack(vault);
+  if (p === 'zapier_mcp') return testZapierMcp();
   return testMock(p, vault);
 }
 
