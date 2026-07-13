@@ -1,9 +1,11 @@
 # Enterprise Claude Skills Platform — June 25, 2026
 
-**Last updated:** June 25, 2026 (end of day)
+**Last updated:** July 13, 2026 (handoff refresh)
 **Active branch:** `feature/jun25-agency-sprint`
 **GitHub:** https://github.com/1Touch-dev/claude-skill-agent/tree/feature/jun25-agency-sprint
-**Status:** All Jun 25 sprint items DONE · Zapier MCP live + tested · 12 skills · 3 workflows · Agent API live
+**Status:** All Jun 25 sprint items DONE · Zapier MCP live + tested · 12 skills · 3 workflows · Agent API live · **Teammate handoff doc published**
+
+> **Handoff:** See root [`Finance Platform Handoff.md`](../Finance%20Platform%20Handoff.md) for the complete system briefing (purpose, architecture, credentials, pending work, deploy, first-week checklist).
 
 ---
 
@@ -158,14 +160,16 @@ Today (25 Jun):
 | # | Item | Owner | Notes |
 |---|------|-------|-------|
 | N1 | Native GitHub repo webhook registration | James / Shubham | Payload: http://54.167.31.169:3000/webhooks/github · Events: PRs + Issues · Secret: GITHUB_WEBHOOK_SECRET · disable SSL · 5 min setup — specs already sent to James |
-| N2 | Disable GitHub poller after webhook is live | Abhi | Set GITHUB_POLL_ENABLED=false in .env, restart backend |
+| N2 | Disable GitHub poller after webhook is live | Dev | Set GITHUB_POLL_ENABLED=false in .env, recreate backend |
 | N3 | Merge feature/jun25-agency-sprint → main | James approval | All tests pass, branch ready |
-| N4 | Seed pricing packages into DB | Abhi | subscription_plans table ready; no data yet. 4 tiers: $99/$249/$599/Custom |
+| N4 | Seed pricing packages into DB | Dev | subscription_plans table ready; no data yet. 4 tiers: $99/$249/$599/Custom |
 | N5 | Wire Stripe for billing | James decision | DB tables (usage_charges, credit_pools) ready; need Stripe keys |
-| N6 | Add 14+ more skills (sales, CS, ops, HR, finance) | Abhi | 12 done, target 40+. See 24th_June.md roadmap |
-| N7 | Add more Zapier app connections | Abhi | Currently: Slack only. Add Asana, Monday, Gmail, HubSpot via mcp.zapier.com |
-| N8 | Skill marketplace UI (categories, star ratings, usage stats) | Abhi | trust_score, skill_runs, audit_logs fields already in DB |
+| N6 | Add 14+ more skills (sales, CS, ops, HR, finance) | Dev | 12 done, target 40+. See 24th_June.md roadmap |
+| N7 | Add more Zapier app connections | Dev | Currently: Slack only. Add Asana, Monday, Gmail, HubSpot via mcp.zapier.com |
+| N8 | Skill marketplace UI (categories, star ratings, usage stats) | Dev | trust_score, skill_runs, audit_logs fields already in DB |
 | N9 | Affiliate program setup | James decision | PartnerStack or Rewardful, 25–30% recurring commission |
+| N10 | Workflow wizard UI (text inputs + per-step approval) | Dev | James Jun 29: text to fill template vars; permission to continue steps |
+| N11 | Multi-agent + RAG per industry overlay | Dev | James Jun 29: customizable knowledge base per industry/business |
 
 ### Phase 2 — medium term
 
@@ -205,6 +209,17 @@ Today (25 Jun):
 | J3 | Decide Stripe / billing platform | Unlocks monetisation |
 | J4 | Decide affiliate platform (PartnerStack vs Rewardful) | Unlocks affiliate channel |
 | J5 | Go-to-market Phase 1 — identify first 3 agency pilot clients | First MRR |
+| J6 | Confirm workflow wizard + RAG as next product priorities (Jun 29) | Scopes next sprint |
+
+---
+
+## Handoff (13 Jul 2026)
+
+Project delegated to a new teammate. Canonical briefing:
+
+- **[Finance Platform Handoff.md](../Finance%20Platform%20Handoff.md)** — everything needed to continue development
+- Live stack verified Jul 13: UI/API/Plane up; `/v1/health` ok; dashboard 12 skills / 29 tasks / 4 integrations
+- Branch `feature/jun25-agency-sprint` is the source of truth until James approves merge to `main`
 
 ---
 

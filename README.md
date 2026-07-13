@@ -2,10 +2,12 @@
 
 A multi-tenant **AI control plane** for governing Claude skills, agents, department suites, industry overlays, licensing, metering, approvals, audit, and integrations across enterprise workspaces.
 
-> **Current branch:** `feature/jun25-agency-sprint` (Jun 25, 2026)
-> Adds agency skills (12 total), public Agent API `/v1`, Zapier MCP (live + Slack tested), 3 workflow templates, Tasks UI badges.
-> Built on `feature/github-poller` which added the EC2 GitHub Poller (interim inbound GitHub events).
+> **Current branch:** `feature/jun25-agency-sprint` (active as of Jul 13, 2026)
+> Agency skills (12), public Agent API `/v1`, Zapier MCP (live + Slack tested), 3 workflow templates, Tasks UI badges.
+> Built on `feature/github-poller` (EC2 GitHub Poller — interim inbound).
 > **Do not merge to `main` yet** — awaiting James approval.
+>
+> **New teammate?** Start here: [Finance Platform Handoff.md](Finance%20Platform%20Handoff.md) — full system purpose, architecture, credentials, done/pending, deploy, and first-week checklist.
 
 ---
 
@@ -183,15 +185,17 @@ Detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Plane: [docs/plane-integ
 ```bash
 git clone https://github.com/1Touch-dev/claude-skill-agent.git
 cd claude-skill-agent
-git checkout feature/github-poller
+git checkout feature/jun25-agency-sprint
 cp .env.example .env
 # EC2: set PUBLIC_API_URL, PUBLIC_UI_URL, and PLANE_* vars (see plane-integration.md)
 docker compose up -d --build
+docker compose -f docker-compose-plane.yml up -d   # Plane CE PM layer
 ```
 
 - **Platform local:** http://localhost:3001 (UI), http://localhost:3000 (API)  
 - **Plane local:** http://localhost:8083  
 - **EC2:** open security group ports **3000**, **3001**, and **8083** — do NOT open 5432 or 6379 (see [docs/ec2-security.md](docs/ec2-security.md))
+- **Full handoff:** [Finance Platform Handoff.md](Finance%20Platform%20Handoff.md)
 
 ### Plane CE (optional PM layer)
 
@@ -217,12 +221,12 @@ Full guide: [docs/plane-integration.md](docs/plane-integration.md)
 ### Keep running after you disconnect (EC2)
 
 ```bash
-git pull origin feature/github-poller
+git pull origin feature/jun25-agency-sprint
 docker compose up -d --build
 docker compose -f docker-compose-plane.yml up -d
 ```
 
-Verify: `curl http://54.167.31.169:3000/health/live`
+Verify: `curl http://54.167.31.169:3000/health/live` and `curl http://54.167.31.169:3000/v1/health`
 
 ### Native setup
 
@@ -302,6 +306,7 @@ bash scripts/audit-ec2-security.sh
 
 | Document | Purpose |
 |----------|---------|
+| [Finance Platform Handoff.md](Finance%20Platform%20Handoff.md) | **Teammate handoff** — full system, purpose, how it works, done/pending, deploy, checklist |
 | [docs/user-guide.md](docs/user-guide.md) | Non-technical guide |
 | [docs/mvp-demo-script.md](docs/mvp-demo-script.md) | 5-minute executive demo |
 | [docs/agent-api.md](docs/agent-api.md) | **Public Agent API `/v1`** — marketplace integration reference |
@@ -317,7 +322,7 @@ bash scripts/audit-ec2-security.sh
 
 | Document | Purpose |
 |----------|---------|
-| [memory/25th_June.md](memory/25th_June.md) | **Jun 25** — Agency skills, Agent API, Zapier MCP live, workflows |
+| [memory/25th_June.md](memory/25th_June.md) | **Jun 25** — Agency skills, Agent API, Zapier MCP live, workflows (+ Jul 13 handoff note) |
 | [memory/24th_June.md](memory/24th_June.md) | **Jun 24** — James strategy: GTM, pricing, affiliate, skills roadmap |
 | [memory/15th_June.md](memory/15th_June.md) | **Jun 15** — James approval, GitHub poller, E2E verification |
 | [memory/12th_June.md](memory/12th_June.md) | **GitHub + Slack** platform hub sprint |
@@ -340,34 +345,35 @@ bash scripts/audit-ec2-security.sh
 
 ```
 claude-skill-agent/
+├── Finance Platform Handoff.md        # Teammate handoff (NEW — Jul 13)
 ├── backend/
 │   ├── src/services/pm-bridge/        # Plane REST client
 │   ├── src/services/github/           # GitHub API client
 │   ├── src/services/slack/            # Slack Web API client
-│   ├── src/services/zapier-mcp/       # Zapier MCP client (NEW)
+│   ├── src/services/zapier-mcp/       # Zapier MCP client
 │   ├── src/routes/pm.js               # /api/pm/*
-│   ├── src/routes/agent-api.js        # /v1/* public API (NEW)
-│   ├── src/routes/mcp.js              # /api/mcp/* (NEW)
-│   ├── src/routes/workflows.js        # /api/workflows/* (NEW)
+│   ├── src/routes/agent-api.js        # /v1/* public API
+│   ├── src/routes/mcp.js              # /api/mcp/*
+│   ├── src/routes/workflows.js        # /api/workflows/*
 │   ├── src/jobs/github-poller.js      # EC2 GitHub poller (interim inbound)
 │   ├── src/routes/webhooks.js         # /webhooks/plane|github|slack
 │   └── db/migrations/
 │       ├── 0011_github_slack_links.sql
 │       ├── 0012_github_poller.sql
-│       └── 0013_agency_skills.sql     # 6 agency skills (NEW)
-├── backend/data/workflows/            # Workflow template JSON files (NEW)
+│       └── 0013_agency_skills.sql     # 6 agency skills
+├── backend/data/workflows/            # Workflow template JSON files
 ├── frontend/                          # React admin UI
 ├── docs/
-│   ├── agent-api.md                   # Public /v1 API reference (NEW)
-│   ├── zapier-mcp.md                  # Zapier MCP setup + API (NEW)
+│   ├── agent-api.md                   # Public /v1 API reference
+│   ├── zapier-mcp.md                  # Zapier MCP setup + API
 │   ├── github_poller.md
 │   └── github_webhooks.md
 ├── memory/                            # Sprint logs
-│   ├── 25th_June.md                   # Latest sprint log (NEW)
+│   ├── 25th_June.md                   # Latest sprint log (+ Jul 13 handoff note)
 │   └── 24th_June.md                   # James strategy session
 ├── scripts/
-│   ├── test-agent-api.sh              # 10-test /v1 API suite (NEW)
-│   ├── test-zapier-mcp.sh             # 7-test Zapier MCP suite (NEW)
+│   ├── test-agent-api.sh              # 10-test /v1 API suite
+│   ├── test-zapier-mcp.sh             # 7-test Zapier MCP suite
 │   ├── test-pm-integration.sh         # 12-test PM e2e suite
 │   ├── test-integrations.sh           # GitHub + Slack connector tests
 │   └── test-github-poller.sh          # 8-test poller e2e suite
