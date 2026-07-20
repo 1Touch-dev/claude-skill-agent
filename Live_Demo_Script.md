@@ -1,180 +1,243 @@
-# Live Website Demo Script 
+# Live Website Demo Script — Word by Word
 
-**Open before you start:** `http://54.167.31.169:3001` (our platform) in one tab, and keep `http://54.167.31.169:8083` (Plane) ready to open in a second tab.
+Read this almost exactly as written while you click through the live site. The flow, examples, and steps below match `System_Explained_End_to_End.md` §14 (Practical end-to-end demo). Every URL, label, and number was verified against the running system.
 
-**The running example used throughout this script:** a fictional new agency client called **"Sunrise Dental Group"**, a local dental practice that wants more patients. We use this one client as a single thread that runs through the entire demo — Skills, Routing, Plane, Tasks, and finally the full automated Workflow — so by the end you've shown one realistic client going from "just signed" to "three pieces of marketing work created, assigned, and tracked" without typing more than a client name and a few details. Every ID and number below (task IDs 33/34/35, Plane issue #31/#32/#33) is real — it was actually run against the live system, not made up for illustration.
+**Open before you start:**
+- Tab 1 — our platform: `http://54.167.31.169:3001`
+- Tab 2 — Plane (PM tool): `http://54.167.31.169:8083` (workspace slug: `claude-skills`)
+- Optional — terminal for API steps at the end
+
+**The one practical example we use throughout:** an agency just signed a new client. We need an **SEO content plan for Client X**. We run that single task through the whole system — create it, route it to an agent, watch it land in Plane, get a Slack notification, and show the two-way sync. That is the same example used in `System_Explained_End_to_End.md`.
 
 ---
 
-### 1. Login
+## Step 0 — URLs and login
 
-*(You're on the login screen.)*
+*(You are on the login screen at `http://54.167.31.169:3001`.)*
 
-"This is our platform — Enterprise Claude Skills. Before anything else, I log in with an admin token."
+"This is our platform — Enterprise Claude Skills. It's a single admin-token login, not a username and password."
 
-- Type `changeme` into the **Admin token** field.
-- Leave the role as **Admin**.
+Do this while you talk:
+- Type `changeme` into the **Admin token** field (this is the `ADMIN_TOKEN` value in `.env` — change it before showing to a real client).
+- Leave the role as **Admin** (full demo access).
 - Click **Continue to control plane**.
 
-"Right now it's a simple token login — the screen even says enterprise SSO is planned for production, but for our internal use and demos this is enough."
+"Right now it's an MVP auth scheme — bearer token session. The login screen even says enterprise SSO is planned for production. For internal demos this is enough."
 
 ---
 
-### 2. Dashboard
+## Step 1 — Show the Dashboard
 
-*(You land on the Dashboard.)*
+*(You land on the Dashboard / home view.)*
 
-"This is the Executive Dashboard — live numbers pulled straight from our database, not hardcoded."
+"This is the Executive Dashboard. These numbers are live from Postgres — not hardcoded."
 
 Point at the tiles as you say:
 
-"We currently have 12 skills, all of them active. 2 customers, 2 workspaces, 2 agents. 4 integrations connected — all 4 healthy. 35 tasks have moved through the system so far, and you can see one run has already succeeded down here under 'Runs by State.' That task count will keep climbing as we go — by the end of this demo we'll add a few more live, in front of you."
+"We have **12 skills**, all active. **12 packages**, **6 suites**, **5 overlays**. Two customers — **Acme Corp** and **Globex Inc**. Two workspaces — **Acme Main** and **Globex Main**. Two agents — **Acme Agent** and **Globex Agent**. **35 tasks** have moved through the system. **4 integrations** connected, all 4 healthy. You can also see runs by state down here — one run has already succeeded."
 
-"Let's walk through what each of these actually means."
-
----
-
-### 3. Skills
-
-*(Click "Skills" in the top nav.)*
-
-"This is the Skill Registry — the catalog of every AI capability our agents can perform."
-
-"Each skill has an ID, a key, a name, a lifecycle state — enabled, disabled, deprecated — a risk tier, and a trust level. Right now we have 12 skills, all enabled."
-
-Scroll or point to a couple of rows:
-
-"For example, `mkt_competitor_report` — Competitor Analysis Report — risk tier 1, reviewed. `mkt_social_post` — Social Media Post Writer. These are the marketing-agency skills we built out specifically to support agencies doing SEO, ad copy, email sequences, landing pages, and onboarding work."
-
-"We also have general department skills — PR Summary Bot, Spec Outline Assistant, Policy Checker, Runbook Draft, CS Response Helper — so this isn't just a marketing tool, it's a general skill framework."
+"So this is the control plane for a multi-tenant AI agent operations platform — customers, workspaces, agents, skills, tasks, and integrations, all in one place."
 
 ---
 
-### 4. Agents
+## Step 2 — Show the Skill Catalog
 
-*(Click "Agents" in the top nav.)*
+*(Click **Skills** in the top nav.)*
 
-"This is where we manage Agent Profiles — the actual AI agents that get work assigned to them."
+"This is the Skill Registry — every AI capability our agents can perform."
 
-"We have two right now: Globex Agent, which belongs to the Globex workspace, has an autonomy level of 3, and is pooled — meaning it's available to pick up work automatically. And Acme Agent, autonomy level 2, also pooled, for the Acme workspace."
+"Each skill has a key, a name, a lifecycle state — enabled, disabled, deprecated — a risk tier, and a credit cost. Pricing packages will eventually be built on these credit costs and risk tiers."
 
-"See this 'Plane Member' dropdown next to each agent? That's how we map our internal agent to a member inside Plane, our project management tool — so when a task gets routed to Globex Agent, the resulting card in Plane is automatically assigned to the right person or bot."
+Scroll or point at rows as you say:
+
+"We have general department skills — **PR Summary Bot** (`eng_pr_summary`), **Spec Outline Assistant** (`prod_spec_outline`), **Policy Checker** (`grc_policy_check`), **Runbook Draft** (`ops_runbook`), **CS Response Helper** (`cs_response_helper`)."
+
+"And we built a full marketing suite for agencies — **Campaign Brief Generator** (`mkt_campaign_brief`), **SEO Content Writer** (`mkt_seo_content`), **Ad Copy Writer** (`mkt_ad_copy`), **Email Sequence Writer** (`mkt_email_sequence`), **Landing Page Copy** (`mkt_landing_copy`), **Social Media Post Writer** (`mkt_social_post`), **Competitor Analysis Report** (`mkt_competitor_report`)."
+
+"For our example today we'll use **`mkt_seo_content`** — the SEO Content Writer — because our new client needs an SEO content plan."
 
 ---
 
-### 5. Routing Demo — the live "wow" moment, using our example client
+## Step 3 — Show the Agents
 
-*(Click "Routing Demo" in the top nav — note the URL is `/routing`.)*
+*(Click **Agents** in the top nav.)*
 
-"This is the best way to show you the actual brain of the system working live, in real time — this isn't a mockup. Let's warm up with a single manual task for our example client, Sunrise Dental Group, before we show the fully automated version later in this demo."
+"This is where we manage agent profiles — the actual AI agents that get work assigned."
 
-"On the left I can create a new task. I'll fill in Workspace ID — let's use 2, that's Globex, the workspace handling this client. Title — instead of the default text, I'll type something real: 'Discovery call notes — Sunrise Dental Group.' Skill key — `mkt_campaign_brief`, the Campaign Brief Generator."
+Point at each row:
+
+"**Acme Agent** — belongs to the **Acme Main** workspace, autonomy level **2**, pooled — meaning it can pick up work automatically."
+
+"**Globex Agent** — belongs to the **Globex Main** workspace, autonomy level **3**, pooled. Globex already has a live Plane project linked, so every task we route in Globex Main lands straight into a real Plane project."
+
+"See the **Plane Member** dropdown next to each agent? That maps our internal agent to a member inside Plane — so when a task goes to Globex Agent, the Plane card can show the right assignee."
+
+"We'll route our Client X SEO task into **Globex Main** — workspace ID **2** — so **Globex Agent** should pick it up."
+
+---
+
+## Step 4 — Run the live Routing Demo (dry run — who gets the task?)
+
+*(Click **Routing Demo** in the top nav. URL must be `/routing` — not `/routing-demo`.)*
+
+"This page is the best 'wow' moment — it calls real backend logic live, not a mock."
+
+"On the left, the form has **Workspace ID**, **Title**, and **Skill key**. I'll set Workspace ID to **2** — that's Globex Main. Skill key to **`mkt_seo_content`** — SEO Content Writer."
+
+"Before we create the full task, the routing engine works like this: when I click **Route & Apply** on a task, the backend calls `pickAgent` — it pulls all agents for that workspace, checks does this agent's `allowed_skill_keys` include the skill we asked for, and is its autonomy level high enough for this task's risk tier. First match wins."
+
+"It's **not** a big AI model deciding — it's a transparent rule: skill match plus autonomy threshold. Simple on purpose, so it's auditable. When James asked 'what agent is picked' — that's the honest answer: deterministic rules, reason `engine:auto`, not ML."
+
+---
+
+## Step 5 — Create and route a real task, then watch Plane and Slack
+
+*(Stay on **Routing Demo**.)*
+
+"Now let's do the full example — **SEO content plan for Client X**."
+
+Fill in the form exactly:
+- **Workspace ID:** `2` (Globex Main)
+- **Title:** `SEO content plan for Client X`
+- **Skill key:** `mkt_seo_content`
 
 Click **Create Task**.
 
-"That created the task. Now look down here in 'Recent Tasks' — there it is, status 'queued', not yet routed to anyone."
+"Task created. Look at **Recent Tasks** — there it is, status **queued**, PM column still empty — not synced to Plane yet."
 
 Click **Route & Apply** on that new task row.
 
-"Watch what just happened up here —"
+*(Point to the banner message.)*
 
-*(Point to the banner message that appears.)*
+"It says: **Task #\<id\> routed to agent Globex Agent. Syncing to Plane…**"
 
-"It says: 'Task number [X] routed to agent Globex Agent. Syncing to Plane...' That single click just did three things: it picked an agent using our routing rules, it's creating a matching card inside Plane right now in the background, and it's about to post a Slack notification too."
+"That one click did three things in the backend:
+1. Wrote a row to `task_routes` — who got it and why.
+2. Created an `orchestration_runs` record — execution tracking.
+3. Fired a background sync — creates a Plane work item and posts a Slack message. The HTTP response doesn't wait for Plane; it's fire-and-forget so the UI stays fast."
 
-"How does it pick the agent? It's a transparent rule, not a black box — does this agent's allowed-skills list include the skill we asked for, and is the agent's autonomy level high enough for this task's risk tier? If yes, that agent gets it. It's simple and auditable on purpose, so a client can always ask 'why did this get assigned here' and we have a real answer."
+Wait ~2 seconds, then refresh the Recent Tasks table (or wait for auto-reload).
 
----
-
-### 6. Show it landing in Plane
-
-*(Switch to the Plane tab, `http://54.167.31.169:8083`, and refresh, or click the "✈ #" badge next to the task if visible.)*
-
-"Here's Plane — this is a project management tool, like a self-hosted Jira or Linear, that we run ourselves. And here's the card that our platform just created automatically, a few seconds ago, with the task title, the right priority, and assigned to the right member."
-
-"Now here's the two-way part — if I drag this card from Backlog to In Progress right here in Plane..."
-
-*(Drag the card, or describe doing so.)*
-
-"...and go back to our Tasks page and refresh, that task's status updates automatically to 'running,' and a Slack message gets posted announcing the change. So Plane isn't a separate system we have to manually keep in sync — it's a live view into the same task, and it flows both directions."
+"The **✈** badge should appear — that's our task synced to Plane CE. Click it to open the work item."
 
 ---
 
-### 7. Tasks page
+## Step 6 — Show it in Plane (and the two-way sync moment)
 
-*(Click "Tasks" in the top nav.)*
+*(Switch to Tab 2 — Plane at `http://54.167.31.169:8083`, or click the ✈ badge from Routing Demo / Tasks.)*
 
-"This is the full task list. Notice the subtitle: the ✈ badge means synced to Plane, the ⑂ symbol means there's a linked GitHub pull request, and the # symbol means there's a linked Slack thread. So at a glance, anyone can see exactly which systems a task is connected to without opening three different tools."
+"Plane is our self-hosted project management tool — like Jira or Linear, but we run it ourselves on this server. Community Edition, free, separate database from our platform."
 
-"You can see the top counter — right now 29 out of 35 tasks are synced to Plane — and there are filter tabs for All, Synced, and Not synced, so you can immediately spot anything that failed to sync."
+"Here's the card our platform just created — title **SEO content plan for Client X**, correct priority from risk tier, assigned to Globex Agent's mapped Plane member if configured."
 
-"Find our Sunrise Dental discovery-call task in the list — there it is, with a ✈ badge and a link straight into the matching Plane issue. One client's work, fully traceable, in two clicks. Now let's see what happens when instead of creating tasks one at a time like this, we onboard this same client's entire first campaign in a single call."
+"Scroll the description — you'll see a metadata block at the bottom: control-plane task ID, workspace ID, run ID, skill key. That's how Plane always knows which of our tasks this card belongs to."
 
----
+**The two-way sync moment** — do this live if you can:
 
-### 8. Integrations
+"Now watch the two-way part. I'll drag this card from **Backlog** to **In Progress** right here in Plane…"
 
-*(Click "Integrations" in the top nav, then scroll down to the list.)*
+*(Drag the card on the Kanban board.)*
 
-"This is our connector registry, and I want to be clear — these are live, not mocked. GitHub and Slack run real API tests against the real APIs; Asana, Monday, and Trello are still mock validation in this MVP stage."
+"Plane sends a webhook to our backend at `/webhooks/plane`. We map Plane's state to our status — backlog/unstarted becomes `queued`, started becomes `running`, completed becomes `completed`."
 
-"You can see we have 4 connected integrations right now: Slack Events Channel, GitHub MCP Server, Monday.com Integration, and an Asana Connector — all showing status 'connected.'"
+*(Switch back to Tab 1 — **Tasks** page, click **↻ Refresh**.)*
 
-Click **Test** next to GitHub MCP Server.
-
-"If I hit Test here, it makes a real call to the GitHub API using our token and confirms it's reachable — same idea for Slack."
-
-"Now, about GitHub specifically — normally you'd register a webhook so GitHub instantly tells us the moment a pull request changes. We don't have admin access to the repo yet to register that, so instead we built a poller: our backend checks GitHub every 2 minutes for changes and processes them exactly the same way a webhook would. Functionally identical, just up to a 2-minute delay. The moment we get admin access, it's a one-line config change, no rebuild required."
+"Back on our Tasks page — status updated to **running** automatically. And in Slack, a threaded reply was posted on the original notification announcing the change. Plane and Slack are live views into the same task — our platform `task_intake` table is the source of truth."
 
 ---
 
-### 9. Zapier MCP — the "9,000 apps" story
+## Step 7 — Tasks page (integration badges)
 
-*(Stay on Integrations, or open a terminal if you want to show the raw API.)*
+*(Click **Tasks** in the top nav if not already there.)*
 
-"Here's something bigger. We've connected to something called Zapier MCP — Model Context Protocol. Instead of us writing a custom integration for every single tool an agency might use, we plug into Zapier once, and it gives our agents access to over 9,000 apps — Slack, Gmail, Asana, Monday, HubSpot, Google Sheets, you name it."
+"Subtitle says: **✈ badge = synced to Plane CE. ⑂ = GitHub PR linked. # = Slack thread.**"
 
-"We've already fully tested this end to end with Slack — connected, authenticated, and working. Right now it's exposing 15 different tools to our system, including the ability to discover new app actions and execute them. Adding Asana or Gmail next doesn't need new code from us — it's a configuration step in the Zapier dashboard."
+"Top right shows something like **29/35 synced to Plane** — filter tabs **All**, **Synced**, **Not synced** let you spot anything that failed to sync."
+
+Find your **SEO content plan for Client X** row:
+
+"There's our task — status **running**, **✈** link into Plane. If a dev later opens a GitHub PR with `task-\<id\>` in the title, the **⑂ PR #N** badge appears here after the poller runs. If Slack threaded, you'd see **# Slack thread**."
+
+"One glance tells you which external systems this task is connected to — no need to open three tools."
 
 ---
 
-### 10. The public Agent API — for marketplaces
+## Step 8 — Show GitHub integration (poller, not yet real-time webhook)
 
-*(Open a terminal, or just describe it if you don't want to type live.)*
+*(Click **Integrations** in the top nav.)*
 
-"One more piece — we built a separate, simplified API specifically so external tools and marketplaces can plug into us directly, without touching our internal admin system."
+"This is our connector registry. GitHub and Slack run **real** API tests — not mocked. Asana, Monday, Trello are still mock validation in this MVP stage."
 
-If typing live:
+"You see four connected integrations: **Slack Events Channel**, **GitHub MCP Server**, **Monday.com Integration**, **Asana Connector** — all status **connected**."
+
+Click **Test** next to **GitHub MCP Server**.
+
+"That hits the real GitHub API with our token and confirms it's reachable."
+
+"About GitHub events — the ideal path is a native webhook: GitHub → `http://54.167.31.169:3000/webhooks/github` on every PR/issue change. That needs **repo admin access**, which we're still waiting on from James."
+
+"So today we run an **EC2 GitHub Poller** — checks GitHub every **2 minutes**, builds the same payload shape a webhook would send, and feeds it into the **exact same** `processGitHubEvent` function. Deduplication is at the database layer — `integration_events` has a unique constraint on provider plus external ID."
+
+"If there's a PR open that mentions `task-31` in the title or branch, after the next poll tick you'll see the **⑂ PR #N** badge on that task. Functionally identical to a webhook — just up to a 2-minute delay. When we get admin access: register the webhook, set `GITHUB_POLL_ENABLED=false`, restart. One config flip, no rebuild."
+
+---
+
+## Step 9 — Show Zapier MCP (9,000 apps)
+
+*(Stay on **Integrations**, scroll to Zapier MCP if shown, or describe from terminal.)*
+
+"We connected **Zapier MCP** — Model Context Protocol. Instead of writing a custom integration for every app an agency uses, we plug into Zapier once and get **9,000+ apps**."
+
+"It's live and enabled. Slack is fully OAuth'd and tested end-to-end. Adding Asana, Monday, Gmail, or HubSpot is enabling them in the Zapier dashboard — no new backend code."
+
+"If you want to show the raw API:"
+
+```bash
+curl http://54.167.31.169:3000/api/mcp/status -H "Authorization: Bearer changeme"
+curl http://54.167.31.169:3000/api/mcp/tools -H "Authorization: Bearer changeme"
+```
+
+"Write actions use `execute_zapier_write_action` with `selected_api`, `action`, `params`, and a required `output` string — we documented the exact shape in `docs/zapier-mcp.md` after trial and error against the real server."
+
+---
+
+## Step 10 — Show the public Agent API (marketplace story)
+
+*(Open a terminal.)*
+
+"This is separate from the admin UI API — it's what a marketplace partner, Asana plugin, or Monday integration would call."
+
 ```bash
 curl http://54.167.31.169:3000/v1/health
 curl http://54.167.31.169:3000/v1/skills
 ```
 
-"That first call just confirms the API is alive. The second lists our public skill catalog. From here, any external partner — an Asana plugin, a Monday integration, a marketplace listing — can create a task, get it routed to an agent, and poll its status, all through four simple calls. That's the foundation for selling this as a product other platforms plug into, not just something we use internally."
+"First call — API is alive. Second — public skill catalog."
+
+"Full partner flow in four calls: **create task** (`POST /v1/tasks`), **route** (`POST /v1/tasks/:id/route`), **run** (`POST /v1/tasks/:id/run` — same Plane sync and Slack notify as the UI), **poll status** (`GET /v1/tasks/:id/status`). External tools never touch our internal `/api` admin routes."
+
+"Reference: `docs/agent-api.md`. Test script: `scripts/test-agent-api.sh`."
 
 ---
 
-### 11. Workflow templates — the full end-to-end example, start to finish
+## Step 11 — Show a Workflow Template (multi-step automation)
 
-"Everything so far was one task at a time — good for a single discovery-call note, but an agency onboarding a new client needs more than one task. Now let's show the real power move — onboarding that same client, Sunrise Dental Group, with a single call that kicks off their entire first campaign automatically."
+*(Terminal.)*
 
-*(Open a terminal — this is the moment to actually type live, it's more convincing than a screenshot.)*
-
-"First, let's see what workflow templates exist."
+"One task at a time is what we just did for Client X. Agencies often need a **sequence** — onboarding a client means brief, SEO plan, and landing copy in one go."
 
 ```bash
-curl http://54.167.31.169:3000/api/workflows
+curl http://54.167.31.169:3000/api/workflows -H "Authorization: Bearer changeme"
 ```
 
-"This returns three ready-made templates: 'Agency Client Onboarding' — 3 steps, about 44 credits — 'B2B Outbound Sequence' — 3 steps, 33 credits — and 'SEO Content Pipeline' — 3 steps, 46 credits. Each one lists exactly which skills it uses and which variables it needs filled in. Let's look at the onboarding one in detail."
+"Three templates today:
+- **`agency_client_onboarding`** — campaign brief → SEO content plan → landing page copy. Variables: `client_name`, `industry`, `goal`, `keywords`, `product`, `audience`.
+- **`b2b_outbound_sequence`** — email sequence → ad copy → competitor report.
+- **`seo_content_pipeline`** — competitor report → SEO article → social posts."
 
-```bash
-curl http://54.167.31.169:3000/api/workflows/agency_client_onboarding
-```
+"One API call with those variables filled in creates every step as a `task_intake` row, routes each to an agent with the same `pickAgent` logic, and creates `orchestration_runs` records — all in one database transaction."
 
-"You can see its 3 steps: step 1 creates a campaign brief using skill `mkt_campaign_brief`, step 2 generates an SEO content plan using `mkt_seo_content`, step 3 writes landing page copy using `mkt_landing_copy`. Each step has a description template with placeholders like `{client_name}` and `{industry}` — that's what we're about to fill in for Sunrise Dental Group."
-
-"Now watch — one call, real client details, and the whole onboarding sequence fires."
+Example (you can run live or just describe):
 
 ```bash
 curl -X POST http://54.167.31.169:3000/api/workflows/agency_client_onboarding/run \
@@ -183,84 +246,57 @@ curl -X POST http://54.167.31.169:3000/api/workflows/agency_client_onboarding/ru
   -d '{
     "workspace_id": 2,
     "vars": {
-      "client_name": "Sunrise Dental Group",
-      "industry": "Healthcare / Dental",
-      "goal": "Generate 50 new patient leads per month via local SEO and paid social",
-      "keywords": "dentist near me, emergency dental care, teeth whitening",
-      "product": "General & Cosmetic Dentistry Services",
-      "audience": "Local homeowners aged 25-55 within a 10-mile radius"
+      "client_name": "Client X",
+      "industry": "Healthcare",
+      "goal": "50 new leads per month via SEO",
+      "keywords": "dentist near me, teeth whitening",
+      "product": "Dental services",
+      "audience": "Local homeowners 25-55"
     }
   }'
 ```
 
-"That's it — one call. Here's exactly what came back when we ran this live:"
+"Response lists every created task ID, assigned agent, and status. Refresh **Tasks** in the browser — three new rows appear."
 
-```json
-{
-  "workflow_key": "agency_client_onboarding",
-  "workflow_name": "Agency Client Onboarding",
-  "workspace_id": 2,
-  "tasks_created": 3,
-  "tasks": [
-    { "order": 1, "task_id": 33, "skill_key": "mkt_campaign_brief", "title": "Create campaign brief", "agent_id": 2, "agent_name": "Globex Agent", "status": "running" },
-    { "order": 2, "task_id": 34, "skill_key": "mkt_seo_content",   "title": "Generate SEO content plan", "agent_id": 2, "agent_name": "Globex Agent", "status": "running" },
-    { "order": 3, "task_id": 35, "skill_key": "mkt_landing_copy",  "title": "Write landing page copy",  "agent_id": 2, "agent_name": "Globex Agent", "status": "running" }
-  ]
-}
-```
-
-"Walk through what just happened in under a second, with zero manual steps: three tasks were created — task 33, 34, and 35. Each one's description was auto-filled from our variables — task 33's description literally reads 'Campaign brief for new client: Sunrise Dental Group. Industry: Healthcare / Dental. Goal: Generate 50 new patient leads per month via local SEO and paid social.' Each task was immediately routed to Globex Agent, because Globex Agent's allowed-skills list covers all three of these marketing skills. And all three flipped straight to status 'running' — no one had to click anything."
-
-"One honest detail: the workflow endpoint creates and routes the tasks automatically, but today it stops one step short of Plane — pushing to Plane is a separate call, the same `/api/pm/tasks/:id/sync` endpoint used elsewhere in the system. So right after the workflow runs, we make one small follow-up call per task:"
-
-```bash
-curl -X POST http://54.167.31.169:3000/api/pm/tasks/33/sync -H "Authorization: Bearer changeme"
-curl -X POST http://54.167.31.169:3000/api/pm/tasks/34/sync -H "Authorization: Bearer changeme"
-curl -X POST http://54.167.31.169:3000/api/pm/tasks/35/sync -H "Authorization: Bearer changeme"
-```
-
-"Each one comes back with a real Plane issue ID and sequence number — in our run just now, task 33 became Plane issue #31, task 34 became #32, task 35 became #33. That's a known small gap, not a mystery: wiring the workflow runner to auto-call this sync step (the same way the single-task Routing Demo already does automatically) is a five-minute fix, it's just not wired up yet."
-
-"Now let's prove it's not just a JSON response — let's go look at the Tasks page."
-
-*(Switch back to the browser, click "Tasks" in the top nav, refresh.)*
-
-"Scroll to find tasks 33, 34, 35 — 'Create campaign brief,' 'Generate SEO content plan,' 'Write landing page copy.' All three show status 'running,' and all three now show a ✈ badge under PM (Plane) — task 33 links to Plane issue #31, task 34 to #32, task 35 to #33. Click any one of those ✈ links."
-
-*(Click the ✈ link on task 33, or switch to the Plane tab manually.)*
-
-"That opens Plane directly to the matching issue — same title, same description, plus a metadata block at the bottom showing the control-plane task ID, the workspace, the assigned agent, and the skill key, so anyone in Plane can trace a card straight back to the exact system decision that created it."
-
-"So to recap the whole Sunrise Dental Group example, start to finish: we typed six pieces of client information into one API call — no forms, no manual task creation, no manual routing — and in under a second we had three fully-described, fully-routed, fully-tracked pieces of agency work, each already visible and assigned inside our project management tool. That's the entire pitch of this platform in one example: turn a client intake conversation into running, tracked work instantly."
-
-"The one thing missing here today is a visual wizard — right now this step uses an API call and a JSON body, which is why we just typed it in a terminal. Building a form where someone just types in the client details and clicks 'Run' — no terminal required — is the next planned piece, and structurally it's a thin UI layer over exactly the call you just watched, so it's not a big lift."
+"Honest gap: the workflow runner routes tasks but does **not** auto-sync to Plane yet — the single-task **Route & Apply** path does. Plane sync is `POST /api/pm/tasks/:id/sync` per task until we wire that in. The wizard UI James asked for — type client details in a form, optional per-step approval — is pending (`N10` on the roadmap)."
 
 ---
 
-### Closing line
+## Closing line (say this at the end)
 
-"So to summarize what you just watched, end to end, using one real client as the thread through the whole thing: task creation, rule-based agent routing, automatic syncing into a real project management tool, real-time Slack notifications, GitHub integration via a working poller, a live bridge to over 9,000 external apps through Zapier, a public API ready for marketplace partners, and multi-step workflow automation that turned six lines of client info into three routed, tracked pieces of agency work in one call — all of that is real, running code, hitting real live services, right now, not a mockup. The three honest gaps left are: GitHub webhooks are on a 2-minute poller instead of instant because we're waiting on repo-admin access; the workflow runner creates and routes tasks but needs one extra call per task to push into Plane, whereas the single-task Routing Demo does that automatically already — a small wiring fix, not a design problem; and full autonomous execution of the actual skill work — the agent doing the writing itself — still needs a worker queue behind it. Everything else you just saw is done and working."
+"Every piece you just saw — routing with transparent rules, Plane two-way sync, Slack notifications, GitHub via a working poller, Zapier bridge to thousands of apps, public `/v1` API, and multi-step workflows — is **real live code** hitting **real services** on this server, not a mockup."
+
+"We walked one practical example end to end: **SEO content plan for Client X** in **Globex Main**, skill **`mkt_seo_content`**, routed to **Globex Agent**, visible in **Plane**, updatable from either side, with Slack in the loop."
+
+"The gaps to be straight about: (1) GitHub webhooks are a 2-minute poller until repo-admin access — same outcome, not instant. (2) Workflow runs need an extra Plane sync call per task today. (3) Autonomous execution — the agent actually writing the content without a human — needs a worker queue (BullMQ); today the platform tracks, routes, and notifies perfectly, but something else still does the skill work."
 
 ---
 
-## Quick reference — exact numbers/labels used in this script (verified live, Jul 20 2026)
+## Quick reference (verified live, Jul 20 2026)
 
-- Login token: `changeme` (default `ADMIN_TOKEN`)
-- Dashboard totals: 12 skills / 12 active / 2 customers / 2 workspaces / 2 agents / 35 tasks / 4 integrations / 4 connected / 1 run succeeded
-- Agents: **Globex Agent** (workspace Globex Main, autonomy 3, pooled) / **Acme Agent** (workspace Acme Main, autonomy 2, pooled)
-- Live routing confirmation message format: `Task #<id> routed to agent <Agent Name>. Syncing to Plane...`
-- Integrations list: Slack Events Channel (slack, connected), GitHub MCP Server (github, connected), Monday.com Integration (monday, connected), Asana Connector (asana, connected)
-- Zapier MCP: enabled, live mode, 15 tools exposed (discover_zapier_actions, enable/disable_zapier_action, list_enabled_zapier_actions, execute_zapier_read/write_action, and more)
-- Routing Demo URL: `/routing` (not `/routing-demo`)
-- Tasks page badge legend: ✈ = synced to Plane CE, ⑂ = GitHub PR linked, # = Slack thread
-- Tasks page sync counter (at time of writing): 29/35 synced to Plane, filter tabs All/Synced/Not synced
+| Item | Value |
+|---|---|
+| Platform UI | `http://54.167.31.169:3001` |
+| Backend API | `http://54.167.31.169:3000` |
+| Plane UI | `http://54.167.31.169:8083` / workspace `claude-skills` / project `WS0002` |
+| Login token | `changeme` (`ADMIN_TOKEN`) |
+| Example workspace | **Globex Main** = workspace ID **2** |
+| Example skill | `mkt_seo_content` (SEO Content Writer) |
+| Example task title | `SEO content plan for Client X` |
+| Expected agent | **Globex Agent** (autonomy 3, pooled) |
+| Routing Demo URL | `/routing` |
+| Route success message | `Task #<id> routed to agent Globex Agent. Syncing to Plane…` |
+| Customers | Acme Corp, Globex Inc |
+| Workspaces | Acme Main, Globex Main |
+| Dashboard | 12 skills / 2 customers / 2 workspaces / 2 agents / 35 tasks / 4 integrations |
+| Tasks page | ✈ Plane, ⑂ GitHub PR, # Slack thread; ~29/35 synced |
+| GitHub | Poller every 120s (`GITHUB_POLL_ENABLED=true`) |
+| Zapier MCP | Enabled, Slack connected, ~15 tools |
+| Workflows | `agency_client_onboarding`, `b2b_outbound_sequence`, `seo_content_pipeline` |
 
-### Full end-to-end example used in Section 11 — "Sunrise Dental Group" (real, live-run data, not illustrative)
-
-- Workflow template: `agency_client_onboarding` ("Agency Client Onboarding"), 3 steps, ~44 estimated credits
-- Request: `POST /api/workflows/agency_client_onboarding/run`, `workspace_id: 2`, vars = `client_name: "Sunrise Dental Group"`, `industry: "Healthcare / Dental"`, `goal: "Generate 50 new patient leads per month via local SEO and paid social"`, `keywords: "dentist near me, emergency dental care, teeth whitening"`, `product: "General & Cosmetic Dentistry Services"`, `audience: "Local homeowners aged 25-55 within a 10-mile radius"`
-- Result: 3 tasks created, all routed to **Globex Agent**, all status `running`:
-  - Task **#33** "Create campaign brief" (skill `mkt_campaign_brief`) → Plane issue **#31**
-  - Task **#34** "Generate SEO content plan" (skill `mkt_seo_content`) → Plane issue **#32**
-  - Task **#35** "Write landing page copy" (skill `mkt_landing_copy`) → Plane issue **#33**
-- Plane sync for these 3 required one follow-up call each: `POST /api/pm/tasks/{33,34,35}/sync` (the workflow runner does not auto-call this today — the single-task Routing Demo's `/route/apply` does)
+**Full task lifecycle (same as `System_Explained_End_to_End.md` §6):**
+1. Create → `task_intake`
+2. Route → `task_routes` + `orchestration_runs`
+3. Plane sync (auto on `/route/apply`, manual on workflow runs)
+4. Slack notify
+5. Feedback from Plane webhook / GitHub poller / Slack events
